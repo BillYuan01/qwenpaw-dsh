@@ -15,26 +15,11 @@ import logging
 import os
 from pathlib import Path
 
-from qwenpaw_dsh.host import ApprovalDecision, ApprovalPort, ApprovalRequest, HostContext
+from qwenpaw_dsh.approvals import QwenPawApprovalPort
+from qwenpaw_dsh.host import HostContext
 from qwenpaw_dsh.loaders import mount_provider, unmount_provider
 
 log = logging.getLogger("qwenpaw.dsh")
-
-
-class QwenPawApprovalPort(ApprovalPort):
-    """Bridge provider approvals into QwenPaw's approval cards.
-
-    Real implementation follows the Codex adapter precedent
-    (``harnesses/codex/adapter.py:640-710``):
-    ``get_approval_service().create_pending_summary(...)`` + ``wait_for_approval(...)``.
-    The exact call signature is left unimplemented on purpose — this skeleton
-    does not guess host internals.
-    """
-
-    async def request(self, request: ApprovalRequest) -> ApprovalDecision:
-        del request
-        log.warning("DSH approval port is a skeleton stub; rejecting")
-        return ApprovalDecision(status="rejected")
 
 
 def build_host_context() -> HostContext:

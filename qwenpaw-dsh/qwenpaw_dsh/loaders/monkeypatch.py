@@ -13,10 +13,13 @@ Contract: every target must exist and every attribute must be found, otherwise
 from __future__ import annotations
 
 import importlib
+import logging
 from typing import Any
 
 from ..provider import ProviderSpec
 from .port import MountReport, MountUnsupported
+
+log = logging.getLogger("qwenpaw.dsh")
 
 # module path -> attributes we must patch there
 DEFAULT_TARGETS: dict[str, tuple[str, ...]] = {
@@ -127,10 +130,24 @@ class MonkeypatchLoader:
 
         def create_adapter(provider_id, state_dir, settings=None):
             if provider_id == spec.id:
-                from ..host import HostContext  # local import: avoid cycles
+                from ..host import HostContext, NullApprovalPort  # local: avoid cycles
                 values = settings or {}
+                # Real approval-card bridge. Constructing it imports no QwenPaw
+                # symbol (those are lazy, inside ``request``); if even the
+                # import fails, fall back to the reject-only port.
+                try:
+                    from ..approvals import QwenPawApprovalPort
+
+                    approval = QwenPawApprovalPort()
+                except Exception:  # noqa: BLE001
+                    log.warning(
+                        "dsh: approval port unavailable; cards disabled",
+                        exc_info=True,
+                    )
+                    approval = NullApprovalPort()
                 return spec.factory(state_dir, settings, HostContext(
                     state_dir=state_dir,
+                    approval=approval,
                     binary=str(values.get("binary") or "").strip() or None,
                     profile=str(values.get("profile") or "acp").strip(),
                 ))
