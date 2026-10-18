@@ -10,5 +10,8 @@ node_modules/
 .contract-test/
 *.log
 
+# Local notes
+PROGRESS.md
+
 # OS
 .DS_Store
