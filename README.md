@@ -31,7 +31,7 @@ QwenPaw 的第三方后端系统（harness）经插件装载一个 `DshAdapter`�
 ## 状态与兼容
 
 - **v0.1 已实测**：文本/思考、工具生命周期、模型选择、跨重启会话恢复、进程池（证据见 `dsh-qwenpaw-bridge/TESTING.md`）
-- 路线图：审批卡片、MCP/Skills 投影、图片附件、`context_usage`
+- 路线图与未完成事项：见 [`AGENTS.md`](./AGENTS.md)
 - 兼容：QwenPaw **2.2.x**（装载层隔离；2.3 官方插件机制落地后仅替换装载层）；DSH **≥ 0.2.0-rc.2**（developer preview，接口可能变化）
 - ⚠️ 社区方案、非官方；请自行评估风险后使用
 
