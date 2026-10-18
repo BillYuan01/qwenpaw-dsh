@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Test artifacts
+.bridge-test/
+.contract-test/
+*.log
+
+# OS
+.DS_Store

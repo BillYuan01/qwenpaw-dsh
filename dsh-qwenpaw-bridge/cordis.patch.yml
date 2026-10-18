@@ -1,0 +1,22 @@
+# dsh-qwenpaw-bridge bundle layer.
+#
+# The stock @deepseek-ai/dsh-acp-app bundle inserts an `acp` row. This layer
+# replaces that transport with the bridge, which calls the SAME @deepseek-ai/dsh-acp
+# implementation but supplies its own ACP stream object (stdout/stdin relay).
+# Everything else in dsh-acp-app (notably `acp-app-startup`, which owns stdin EOF)
+# is left untouched.
+#
+# Apply order: dsh-base -> dsh-acp-app -> this bundle -> profile cordis.patch.yml.
+- id: acp
+  disabled: true
+
+- insert:
+    - id: qwenpaw-bridge
+      name: '@local/dsh-qwenpaw-bridge'
+      # The bridge waits for acpAppStartup itself, so --help still starts no
+      # transport. provider/model may be supplied here or through the profile
+      # patch; otherwise the bridge falls back to ctx.agentDefaultModel.
+      config:
+        streaming: true
+        permissionPresets: true
+        models: true

@@ -1,0 +1,16 @@
+{
+  "name": "dsh-profile-qwenpaw",
+  "private": true,
+  "dependencies": {
+    "@local/dsh-qwenpaw-bridge": "file:/ABSOLUTE/PATH/TO/dsh-qwenpaw-bridge"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-acp-app",
+        "@local/dsh-qwenpaw-bridge"
+      ]
+    }
+  }
+}

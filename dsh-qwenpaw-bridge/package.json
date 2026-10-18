@@ -1,0 +1,36 @@
+{
+  "name": "@local/dsh-qwenpaw-bridge",
+  "version": "0.1.0",
+  "description": "DSH bundle plugin that upgrades the ACP profile for QwenPaw: live assistant streaming, hot-switchable permission presets, and a one-shot model catalog in _meta.qwenpaw.",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "profile",
+    "README.md",
+    "TESTING.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "acp",
+    "qwenpaw"
+  ],
+  "peerDependencies": {
+    "@agentclientprotocol/sdk": "^1.4.0",
+    "@deepseek-ai/dsh-acp": "0.2.0-rc.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
