@@ -81,7 +81,7 @@ def _option_id(option: Any) -> str:
 
 
 def _pick_allow_once(options: list[Any]) -> Any:
-    """Pick the most permissive *non-persistent* allow option, or None."""
+    """Pick the narrowest non-persistent allow option (allow-once first)."""
     for option in options:
         if _option_kind(option) == "allow_once":
             return option
