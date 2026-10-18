@@ -39,7 +39,6 @@ QwenPaw 的第三方后端系统（harness）经插件装载一个 `DshAdapter`�
 
 - `qwenpaw-dsh`：Apache-2.0（与 QwenPaw 一致，见根目录 `LICENSE`）
 - `dsh-qwenpaw-bridge`：MIT（见其 `package.json`）
-- © 2026 BillYuan01
 
 ---
 
