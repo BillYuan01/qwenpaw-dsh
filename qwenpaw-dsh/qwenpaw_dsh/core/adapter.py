@@ -34,6 +34,7 @@ from qwenpaw.harnesses.events import (
 from ..host import HostContext
 from . import event_mapper as mapper
 from .acp_client import DshConnection
+from .permissions import resolve_permission_mode
 
 log = logging.getLogger("qwenpaw.dsh")
 
@@ -60,9 +61,7 @@ class DshAdapter:
         self.host = host
         self._binary = str(self.settings.get("binary") or host.binary or "dsh")
         self._profile = str(self.settings.get("profile") or host.profile or "acp")
-        self._permission_mode = str(
-            self.settings.get("permission_mode") or "workspace-write",
-        )
+        self._permission_mode = resolve_permission_mode(self.settings)
         self._approval_policy = str(self.settings.get("approval_policy") or "ask")
         self._connections: dict[tuple, DshConnection] = {}
         self._live: dict[str, tuple[tuple, str]] = {}
