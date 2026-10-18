@@ -22,11 +22,11 @@
 
 ### v0.2 — 补全核心能力
 
-1. **审批卡片**：v0.1 权限请求为保守自动拒绝 → 接宿主审批服务（QwenPaw codex 适配器同款先例）
+1. **审批卡片** ✅（2026-10-18）：权限请求 → 宿主审批卡（批准/拒绝/超时三径 live 实测通过）；`approval_level`（STRICT/SMART/AUTO/OFF）→ DSH 权限模式（read-only/workspace-write/danger-full-access）对齐。行为备注：workspace-write 下越界操作先被沙箱硬拒绝、由模型提权重试触发卡片；批准为 one-shot（不构成会话级放宽）
 2. **MCP 投影**：`session/new.mcpServers`（stdio 需绝对路径；不支持 sse；坏 server 需"去 MCP 重试一次"）
 3. **Skills 投影**：`--patch customSkillDirs` + **kebab 归一化与双向映射**（DSH 强制 `[a-z0-9-]`，snake_case 技能会被静默丢弃）
 4. **图片附件**：内联 base64 图片块（需目标路由声明 image 能力，先探测再发）
-5. **切 `qwenpaw` profile**：控制台获得真流式（桥已就绪，仅改 runner/profile 配置）
+5. **切 `qwenpaw` profile** ✅（2026-10-18）：bridge profile 已装入，standalone 实测 text_chunks=65（基线 1），控制台真流式
 
 ### v0.3 — 上游化（Upstream）
 
@@ -39,7 +39,7 @@
 
 ## 未完成 / 已知限制（"还没做到的"）
 
-1. **审批**：保守自动拒绝（无卡片）；escalation 语义需细化——"批准一次"≠授予更宽沙箱（DSH 会二次征询）
+1. **审批卡标题可读性**：权限请求缺 title 时卡片显示兜底名（"external-agent"），可补传工具标题/命令提升可读性
 2. **MCP**：策略/allowlist 不可经 ACP 传递；sse 不支持
 3. **Skills**：归一化层未实现（当前 snake_case 技能进不去）
 4. **`context_usage`**：ACP 有 `usage_update`，宿主事件模型暂无通道（依赖 PR-3）
