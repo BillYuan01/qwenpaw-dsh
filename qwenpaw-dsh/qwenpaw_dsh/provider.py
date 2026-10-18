@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 from .host import HostContext
 from .core.adapter import DshAdapter
+from .core.permissions import resolve_permission_mode
 
 PROVIDER_ID = "dsh"
 PROVIDER_NAME = "DeepSeek Harness"
@@ -84,7 +85,7 @@ def _config_key(settings: dict[str, Any] | None) -> tuple:
     return (
         str(values.get("binary") or "").strip(),
         str(values.get("profile") or "acp").strip(),
-        str(values.get("permission_mode") or "workspace-write").strip(),
+        resolve_permission_mode(values),
         str(values.get("approval_policy") or "ask").strip(),
     )
 

@@ -22,6 +22,9 @@ class ApprovalRequest:
     severity: str = "medium"
     payload: dict[str, Any] = field(default_factory=dict)
     timeout_seconds: float | None = None
+    # Request-scoped routing context (session_id / agent_id / user_id /
+    # channel). Travels with the request so one shared port stays stateless.
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

@@ -34,6 +34,7 @@ from qwenpaw.harnesses.events import (
 from ..host import HostContext
 from . import event_mapper as mapper
 from .acp_client import DshConnection
+from .permissions import resolve_permission_mode
 
 log = logging.getLogger("qwenpaw.dsh")
 
@@ -60,9 +61,7 @@ class DshAdapter:
         self.host = host
         self._binary = str(self.settings.get("binary") or host.binary or "dsh")
         self._profile = str(self.settings.get("profile") or host.profile or "acp")
-        self._permission_mode = str(
-            self.settings.get("permission_mode") or "workspace-write",
-        )
+        self._permission_mode = resolve_permission_mode(self.settings)
         self._approval_policy = str(self.settings.get("approval_policy") or "ask")
         self._connections: dict[tuple, DshConnection] = {}
         self._live: dict[str, tuple[tuple, str]] = {}
@@ -124,6 +123,7 @@ class DshAdapter:
                 env=env,
                 cwd=str(Path.home()),
                 key=key,
+                approval=self.host.approval,
             )
             self._connections[key] = connection
             return connection
@@ -295,6 +295,7 @@ class DshAdapter:
         if live is not None:
             connection = self._connections.get(live[0])
             if connection is not None:
+                connection.client.clear_approval_context(live[1])
                 await connection.close_session(live[1])
 
     async def stop(self) -> None:
@@ -319,6 +320,10 @@ class DshAdapter:
         try:
             connection = await self._connection()
             acp_session_id = await self._ensure_session(connection, session_id, cwd)
+            connection.client.set_approval_context(
+                acp_session_id,
+                self._approval_context(session_id, settings),
+            )
             await self._apply_model(connection, acp_session_id, settings)
 
             while not connection.client.queue.empty():
@@ -391,6 +396,22 @@ class DshAdapter:
             await connection.set_config_option(acp_session_id, "model", value)
         except Exception:  # noqa: BLE001 — switching is best-effort in v0.1
             log.warning("dsh: set model %s failed", model_id, exc_info=True)
+
+    @staticmethod
+    def _approval_context(
+        session_id: str,
+        settings: dict[str, Any],
+    ) -> dict[str, str]:
+        """Routing context for approval cards raised during this turn."""
+        context = dict((settings or {}).get("_request_context") or {})
+        resolved_session = str(context.get("session_id") or session_id or "default")
+        return {
+            "session_id": resolved_session,
+            "root_session_id": resolved_session,
+            "agent_id": str(context.get("agent_id") or "default"),
+            "user_id": str(context.get("user_id") or "default"),
+            "channel": str(context.get("channel") or "console"),
+        }
 
     @staticmethod
     def _compose_prompt(
