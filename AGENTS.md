@@ -76,7 +76,7 @@ qwenpaw-dsh/
 4. **`context_usage`**：ACP 有 `usage_update`，宿主事件模型暂无通道（依赖 PR-3）
 5. **图片残余**：探测取自 initialize 的默认路由（会话内切模型未重探）；纯图无文本时首块为空 `text_block`
 6. **契约测试套件**（s01–s06）暂未收录进本仓库
-7. **未验证**：desktop/daemon 形态的插件加载；跨 DSH 版本 resume；SSE/HTTP MCP
+7. **未验证**：`hub` / `tui` / `acp` 三种运行形态的插件加载（`app` 与 `desktop` 已验，见 `docs/forms-matrix.md`）；跨 DSH 版本 resume；SSE/HTTP MCP
 8. **模型目录差异**：QwenPaw 控制台对"不在后端目录中的模型"有归一化行为（选择模型时注意）
 9. **DSH 为 developer preview**（0.2.0-rc.2）：仅依赖标准 ACP v1 + feature-detect；`SUPPORTED_DSH=<0.3.0` 守卫
 

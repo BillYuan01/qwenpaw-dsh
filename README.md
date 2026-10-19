@@ -183,6 +183,10 @@ DSH_CONTRACT_PROFILE=qwenpaw ./pytest -m contract    # 桥 profile  → 6 passed
 
 ## 兼容性
 
+**运行形态**：插件装载与形态无关——由 `WORKING_DIR`（`QWENPAW_WORKING_DIR` → `~/.copaw` → `~/.qwenpaw`）唯一决定插件目录，装载点唯一（构建 FastAPI app 时）。
+已实测：`qwenpaw app` ✅、`qwenpaw desktop` ✅（后端装载；窗口需宿主机的 GTK/Qt 绑定）；**`qwenpaw task`（无头）不装载插件**（宿主设计）。
+完整矩阵与证据：**[`docs/forms-matrix.md`](./docs/forms-matrix.md)**。
+
 - QwenPaw **2.2.x**（装载层隔离；2.3 官方机制落地后仅替换装载层）
 - DSH **≥ 0.2.0-rc.2**（developer preview，接口可能变化；已做 `SUPPORTED_DSH` 守卫）
 - Node.js（`dsh` 运行时）
