@@ -1,0 +1,281 @@
+From 57e356ab206a0d63e8cf3796b83c9afcb93da941 Mon Sep 17 00:00:00 2001
+From: BillYuan01 <40728295+BillYuan01@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 14:31:14 +0800
+Subject: [PATCH] fix(harnesses): map login/logout failures to readable 409
+ responses
+
+The login route let adapter failures escape: a provider that cannot log
+in (HarnessOperationNotSupportedError) or whose optional dependency is
+missing (RuntimeError from MissingDependencyAdapter) produced a bare 500
+with a server traceback. Logout only mapped the not-supported error, so
+the same missing-dependency RuntimeError leaked as a 500.
+
+Map both to 409. Login returns a readable string ``detail`` (the frontend
+only surfaces string details); logout keeps its established structured
+``{code, message}`` shape. Unknown providers still return 404 and no new
+error class is introduced.
+---
+ src/qwenpaw/app/routers/harnesses.py          | 32 ++++++-
+ tests/integration/test_harnesses_router.py    | 93 +++++++++++++++++++
+ .../unit/app/routers/test_harnesses_router.py | 90 ++++++++++++++++++
+ 3 files changed, 213 insertions(+), 2 deletions(-)
+
+diff --git a/src/qwenpaw/app/routers/harnesses.py b/src/qwenpaw/app/routers/harnesses.py
+index 5ac1071..77ab9c7 100644
+--- a/src/qwenpaw/app/routers/harnesses.py
++++ b/src/qwenpaw/app/routers/harnesses.py
+@@ -66,6 +66,11 @@ async def _capability_unavailable_message(
+     )
+ 
+ 
++def _operation_message(exc: RuntimeError) -> str:
++    """Return a client-safe explanation without leaking a traceback."""
++    return str(exc).strip() or "This provider cannot perform the operation."
++
++
+ @router.get("/{provider_id}/models")
+ async def get_harness_models(
+     provider_id: str,
+@@ -172,7 +177,20 @@ async def post_harness_login(
+         provider_id,
+         body.settings,
+     )
+-    return await adapter.start_login(device_code=body.device_code)
++    try:
++        return await adapter.start_login(device_code=body.device_code)
++    except HarnessOperationNotSupportedError as exc:
++        raise HTTPException(
++            status_code=409,
++            detail=_operation_message(exc),
++        ) from exc
++    except RuntimeError as exc:
++        # Optional providers raise RuntimeError until their dependency is
++        # installed (e.g. "Install qwenpaw[codex] to enable Codex.").
++        raise HTTPException(
++            status_code=409,
++            detail=_operation_message(exc),
++        ) from exc
+ 
+ 
+ @router.post("/{provider_id}/logout")
+@@ -195,7 +213,17 @@ async def post_harness_logout(
+             status_code=409,
+             detail={
+                 "code": "logout_not_supported",
+-                "message": str(exc),
++                "message": _operation_message(exc),
++            },
++        ) from exc
++    except RuntimeError as exc:
++        # Missing optional dependencies surface as RuntimeError; map them
++        # to the same structured 409 shape instead of a bare 500.
++        raise HTTPException(
++            status_code=409,
++            detail={
++                "code": "logout_unavailable",
++                "message": _operation_message(exc),
+             },
+         ) from exc
+     return {"ok": True}
+diff --git a/tests/integration/test_harnesses_router.py b/tests/integration/test_harnesses_router.py
+index b907bf3..e1b1cb0 100644
+--- a/tests/integration/test_harnesses_router.py
++++ b/tests/integration/test_harnesses_router.py
+@@ -250,3 +250,96 @@ def test_harnesses_coming_soon_provider_409(app_server) -> None:
+         timeout=_HARNESSES_TIMEOUT,
+     )
+     assert resp2.status_code == 409, app_server.logs_tail()
++
++
++# ------------------------------------------------------------------ #
++# Login / logout error tolerance
++# ------------------------------------------------------------------ #
++
++
++def _missing_dependency_provider(app_server):
++    """Return a provider whose optional dependency is not installed."""
++    resp = app_server.api_request(
++        "GET",
++        "/api/harnesses",
++        timeout=_HARNESSES_TIMEOUT,
++    )
++    assert resp.status_code == 200, app_server.logs_tail()
++    for provider in resp.json().get("providers", []):
++        if provider.get("installed"):
++            continue
++        error = str(provider.get("error") or "")
++        if "Install qwenpaw[" in error:
++            return provider
++    return None
++
++
++@pytest.mark.integration
++@pytest.mark.p1
++def test_harnesses_login_missing_dependency_409(app_server) -> None:
++    """Test purpose:
++    - Verify POST /api/harnesses/{id}/login returns a readable 409 (not a
++      bare 500 with a traceback) when the provider's optional dependency
++      is not installed.
++
++    Test flow:
++    1. GET /api/harnesses to find a provider with a missing optional
++       dependency (skip when every provider is installed).
++    2. POST /api/harnesses/{id}/login.
++    3. Assert 409 and a string ``detail`` containing "Install qwenpaw[".
++
++    API endpoints:
++    - GET /api/harnesses
++    - POST /api/harnesses/{provider_id}/login
++    """
++    provider = _missing_dependency_provider(app_server)
++    if provider is None:
++        pytest.skip("No provider with a missing optional dependency")
++    provider_id = provider["id"]
++
++    resp = app_server.api_request(
++        "POST",
++        f"/api/harnesses/{provider_id}/login",
++        json={"settings": {}, "device_code": False},
++        timeout=_HARNESSES_TIMEOUT,
++    )
++    assert resp.status_code == 409, app_server.logs_tail()
++    detail = resp.json().get("detail")
++    assert isinstance(detail, str)
++    assert "Install qwenpaw[" in detail
++
++
++@pytest.mark.integration
++@pytest.mark.p1
++def test_harnesses_logout_missing_dependency_409(app_server) -> None:
++    """Test purpose:
++    - Verify POST /api/harnesses/{id}/logout maps a missing optional
++      dependency to a structured 409 instead of a bare 500, keeping the
++      established ``{code, message}`` detail shape.
++
++    Test flow:
++    1. GET /api/harnesses to find a provider with a missing optional
++       dependency (skip when every provider is installed).
++    2. POST /api/harnesses/{id}/logout.
++    3. Assert 409 and a dict ``detail`` whose message contains the
++       install hint.
++
++    API endpoints:
++    - GET /api/harnesses
++    - POST /api/harnesses/{provider_id}/logout
++    """
++    provider = _missing_dependency_provider(app_server)
++    if provider is None:
++        pytest.skip("No provider with a missing optional dependency")
++    provider_id = provider["id"]
++
++    resp = app_server.api_request(
++        "POST",
++        f"/api/harnesses/{provider_id}/logout",
++        json={"settings": {}},
++        timeout=_HARNESSES_TIMEOUT,
++    )
++    assert resp.status_code == 409, app_server.logs_tail()
++    detail = resp.json().get("detail")
++    assert isinstance(detail, dict)
++    assert "Install qwenpaw[" in detail.get("message", "")
+diff --git a/tests/unit/app/routers/test_harnesses_router.py b/tests/unit/app/routers/test_harnesses_router.py
+index 9190373..6b90f3a 100644
+--- a/tests/unit/app/routers/test_harnesses_router.py
++++ b/tests/unit/app/routers/test_harnesses_router.py
+@@ -125,3 +125,93 @@ async def test_qoder_logout_returns_structured_conflict(
+             "Qoder CLI does not expose a non-interactive logout command."
+         ),
+     }
++
++
++def _login_workspace(adapter: AsyncMock) -> SimpleNamespace:
++    """Build a monkeypatch workspace whose runtime returns ``adapter``."""
++    runtime = SimpleNamespace(adapter=AsyncMock(return_value=adapter))
++    return SimpleNamespace(harness_runtime=runtime)
++
++
++@pytest.mark.asyncio
++async def test_login_unsupported_returns_readable_conflict(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    """A provider that cannot log in yields a 409 with a string detail."""
++    adapter = AsyncMock()
++    adapter.start_login.side_effect = HarnessOperationNotSupportedError(
++        "Qoder login is not supported in this environment.",
++    )
++    monkeypatch.setattr(
++        harnesses,
++        "get_agent_for_request",
++        AsyncMock(return_value=_login_workspace(adapter)),
++    )
++
++    with pytest.raises(HTTPException) as exc_info:
++        await harnesses.post_harness_login(
++            "qoder",
++            harnesses.HarnessLoginRequest(),
++            cast(Request, object()),
++        )
++
++    assert exc_info.value.status_code == 409
++    assert exc_info.value.detail == (
++        "Qoder login is not supported in this environment."
++    )
++
++
++@pytest.mark.asyncio
++async def test_login_missing_dependency_returns_readable_conflict(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    """A missing optional dependency maps to a readable 409, not a 500."""
++    adapter = AsyncMock()
++    adapter.start_login.side_effect = RuntimeError(
++        "Install qwenpaw[codex] to enable Codex.",
++    )
++    monkeypatch.setattr(
++        harnesses,
++        "get_agent_for_request",
++        AsyncMock(return_value=_login_workspace(adapter)),
++    )
++
++    with pytest.raises(HTTPException) as exc_info:
++        await harnesses.post_harness_login(
++            "codex",
++            harnesses.HarnessLoginRequest(),
++            cast(Request, object()),
++        )
++
++    assert exc_info.value.status_code == 409
++    assert isinstance(exc_info.value.detail, str)
++    assert "Install qwenpaw[" in exc_info.value.detail
++
++
++@pytest.mark.asyncio
++async def test_logout_missing_dependency_returns_structured_conflict(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    """Keep the structured 409 shape while mapping a missing dependency."""
++    adapter = AsyncMock()
++    adapter.logout.side_effect = RuntimeError(
++        "Install qwenpaw[codex] to enable Codex.",
++    )
++    monkeypatch.setattr(
++        harnesses,
++        "get_agent_for_request",
++        AsyncMock(return_value=_login_workspace(adapter)),
++    )
++
++    with pytest.raises(HTTPException) as exc_info:
++        await harnesses.post_harness_logout(
++            "codex",
++            harnesses.HarnessStatusRequest(),
++            cast(Request, object()),
++        )
++
++    assert exc_info.value.status_code == 409
++    assert exc_info.value.detail == {
++        "code": "logout_unavailable",
++        "message": "Install qwenpaw[codex] to enable Codex.",
++    }
+-- 
+2.53.0
+

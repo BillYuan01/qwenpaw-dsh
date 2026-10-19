@@ -1,0 +1,619 @@
+From a172a5f3bec198bc46730cef1fb4fbeb6607664e Mon Sep 17 00:00:00 2001
+From: BillYuan01 <40728295+BillYuan01@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 14:03:57 +0800
+Subject: [PATCH] feat(console): drive third-party provider grid from
+ /harnesses
+
+---
+ console/src/locales/en.json                   |  10 ++
+ console/src/locales/id.json                   |  10 ++
+ console/src/locales/ja.json                   |  10 ++
+ console/src/locales/pt-BR.json                |  10 ++
+ console/src/locales/ru.json                   |  10 ++
+ .../locales/thirdPartyAgentLocales.test.ts    |  10 ++
+ console/src/locales/vi.json                   |  10 ++
+ console/src/locales/zh.json                   |  10 ++
+ .../components/AgentBackendFields.module.less |   7 +
+ .../components/AgentBackendFields.test.tsx    | 138 +++++++++++++++-
+ .../Agents/components/AgentBackendFields.tsx  | 150 +++++++++++++++---
+ 11 files changed, 341 insertions(+), 34 deletions(-)
+
+diff --git a/console/src/locales/en.json b/console/src/locales/en.json
+index 72959ad..9fc4c76 100644
+--- a/console/src/locales/en.json
++++ b/console/src/locales/en.json
+@@ -1120,6 +1120,16 @@
+       "thirdPartyDescription": "Uses an authorized external agent runtime instead of a QwenPaw model.",
+       "providerTitle": "Choose a third-party agent",
+       "providerDescription": "Authentication is shared on this device; projects and conversations stay isolated per agent.",
++      "thirdPartyHint": "Third-party agent · Agent workspace",
++      "thirdPartyAccount": "Account",
++      "thirdPartyBinary": "Executable",
++      "thirdPartyBinaryHelp": "Leave blank to auto-detect the runtime, or enter the full path to this agent's executable. QwenPaw also reads the backend PATH.",
++      "thirdPartyBinaryPlaceholder": "Auto-detect, or paste the executable path",
++      "thirdPartyDetectedBinary": "Runtime detected",
++      "thirdPartyNotFound": "Runtime not found. Install or configure this agent's executable.",
++      "thirdPartyAuthHint": "Authenticate through this agent's own login flow or CLI.",
++      "thirdPartyConnect": "Connect",
++      "providerLoadFailed": "Could not load the third-party agent list. Showing the built-in Codex and Qoder options.",
+       "codexHint": "ChatGPT OAuth · Agent workspace",
+       "qoderHint": "Qoder account or PAT · Agent workspace",
+       "account": "Codex account",
+diff --git a/console/src/locales/id.json b/console/src/locales/id.json
+index 497873a..dfcd1e0 100644
+--- a/console/src/locales/id.json
++++ b/console/src/locales/id.json
+@@ -1345,6 +1345,16 @@
+       "thirdPartyDescription": "Menggunakan runtime agen eksternal yang telah diotorisasi, bukan model QwenPaw.",
+       "providerTitle": "Pilih agen pihak ketiga",
+       "providerDescription": "Autentikasi digunakan bersama di perangkat ini; proyek dan percakapan tetap terisolasi untuk setiap agen.",
++      "thirdPartyHint": "Agen pihak ketiga · Ruang kerja agen",
++      "thirdPartyAccount": "Akun",
++      "thirdPartyBinary": "File executable",
++      "thirdPartyBinaryHelp": "Kosongkan untuk mendeteksi runtime secara otomatis, atau masukkan path lengkap ke file executable agen ini. QwenPaw juga membaca PATH backend.",
++      "thirdPartyBinaryPlaceholder": "Deteksi otomatis atau tempel path executable",
++      "thirdPartyDetectedBinary": "Runtime terdeteksi",
++      "thirdPartyNotFound": "Runtime tidak ditemukan. Instal atau konfigurasikan file executable agen ini.",
++      "thirdPartyAuthHint": "Autentikasi melalui alur login atau CLI milik agen ini.",
++      "thirdPartyConnect": "Hubungkan",
++      "providerLoadFailed": "Tidak dapat memuat daftar agen pihak ketiga. Hanya menampilkan Codex dan Qoder bawaan.",
+       "codexHint": "ChatGPT OAuth · Ruang kerja agen",
+       "qoderHint": "Akun Qoder atau PAT · Ruang kerja agen",
+       "account": "Akun Codex",
+diff --git a/console/src/locales/ja.json b/console/src/locales/ja.json
+index cc099e4..9f6c0bd 100644
+--- a/console/src/locales/ja.json
++++ b/console/src/locales/ja.json
+@@ -365,6 +365,16 @@
+       "thirdPartyDescription": "QwenPaw モデルの代わりに、認証済みの外部エージェントランタイムを使用します。",
+       "providerTitle": "サードパーティエージェントを選択",
+       "providerDescription": "認証情報はこのデバイスで共有されますが、プロジェクトと会話はエージェントごとに分離されます。",
++      "thirdPartyHint": "サードパーティエージェント · エージェントワークスペース",
++      "thirdPartyAccount": "アカウント",
++      "thirdPartyBinary": "実行ファイル",
++      "thirdPartyBinaryHelp": "空欄の場合はランタイムを自動検出します。手動で指定する場合は、このエージェントの実行ファイルのフルパスを入力してください。QwenPaw はバックエンドの PATH も参照します。",
++      "thirdPartyBinaryPlaceholder": "自動検出、または実行ファイルのパスを貼り付け",
++      "thirdPartyDetectedBinary": "ランタイムを検出しました",
++      "thirdPartyNotFound": "ランタイムが見つかりません。このエージェントの実行ファイルをインストールまたは設定してください。",
++      "thirdPartyAuthHint": "このエージェント独自のログインフローまたは CLI で認証してください。",
++      "thirdPartyConnect": "接続",
++      "providerLoadFailed": "サードパーティエージェントの一覧を読み込めませんでした。組み込みの Codex と Qoder のみ表示しています。",
+       "codexHint": "ChatGPT OAuth · エージェントワークスペース",
+       "qoderHint": "Qoder アカウントまたは PAT · エージェントワークスペース",
+       "account": "Codex アカウント",
+diff --git a/console/src/locales/pt-BR.json b/console/src/locales/pt-BR.json
+index 71e4958..4fbb38a 100644
+--- a/console/src/locales/pt-BR.json
++++ b/console/src/locales/pt-BR.json
+@@ -706,6 +706,16 @@
+       "thirdPartyDescription": "Usa um runtime de agente externo autorizado em vez de um modelo do QwenPaw.",
+       "providerTitle": "Escolha um agente de terceiros",
+       "providerDescription": "A autenticação é compartilhada neste dispositivo; projetos e conversas permanecem isolados por agente.",
++      "thirdPartyHint": "Agente de terceiros · Workspace do agente",
++      "thirdPartyAccount": "Conta",
++      "thirdPartyBinary": "Executável",
++      "thirdPartyBinaryHelp": "Deixe em branco para detectar o runtime automaticamente ou informe o caminho completo do executável deste agente. O QwenPaw também lê o PATH do backend.",
++      "thirdPartyBinaryPlaceholder": "Detectar automaticamente ou colar o caminho do executável",
++      "thirdPartyDetectedBinary": "Runtime detectado",
++      "thirdPartyNotFound": "Runtime não encontrado. Instale ou configure o executável deste agente.",
++      "thirdPartyAuthHint": "Autentique-se pelo fluxo de login ou CLI deste agente.",
++      "thirdPartyConnect": "Conectar",
++      "providerLoadFailed": "Não foi possível carregar a lista de agentes de terceiros. Exibindo apenas Codex e Qoder integrados.",
+       "codexHint": "ChatGPT OAuth · Workspace do agente",
+       "qoderHint": "Conta Qoder ou PAT · Workspace do agente",
+       "account": "Conta do Codex",
+diff --git a/console/src/locales/ru.json b/console/src/locales/ru.json
+index d83a57f..50f5764 100644
+--- a/console/src/locales/ru.json
++++ b/console/src/locales/ru.json
+@@ -365,6 +365,16 @@
+       "thirdPartyDescription": "Использует авторизованную внешнюю среду агента вместо модели QwenPaw.",
+       "providerTitle": "Выберите стороннего агента",
+       "providerDescription": "Авторизация общая для этого устройства; проекты и диалоги изолированы для каждого агента.",
++      "thirdPartyHint": "Сторонний агент · Рабочая область агента",
++      "thirdPartyAccount": "Учётная запись",
++      "thirdPartyBinary": "Исполняемый файл",
++      "thirdPartyBinaryHelp": "Оставьте поле пустым для автоопределения среды выполнения или укажите полный путь к исполняемому файлу этого агента. QwenPaw также читает PATH бэкенда.",
++      "thirdPartyBinaryPlaceholder": "Автоопределение или путь к исполняемому файлу",
++      "thirdPartyDetectedBinary": "Среда выполнения обнаружена",
++      "thirdPartyNotFound": "Среда выполнения не найдена. Установите или настройте исполняемый файл этого агента.",
++      "thirdPartyAuthHint": "Аутентифицируйтесь через собственный вход этого агента или CLI.",
++      "thirdPartyConnect": "Подключить",
++      "providerLoadFailed": "Не удалось загрузить список сторонних агентов. Показаны только встроенные Codex и Qoder.",
+       "codexHint": "ChatGPT OAuth · Рабочая область агента",
+       "qoderHint": "Учётная запись Qoder или PAT · Рабочая область агента",
+       "account": "Учётная запись Codex",
+diff --git a/console/src/locales/thirdPartyAgentLocales.test.ts b/console/src/locales/thirdPartyAgentLocales.test.ts
+index 2a81b8e..c186e89 100644
+--- a/console/src/locales/thirdPartyAgentLocales.test.ts
++++ b/console/src/locales/thirdPartyAgentLocales.test.ts
+@@ -53,6 +53,16 @@ const requiredPaths = [
+   "agent.backend.thirdPartyDescription",
+   "agent.backend.providerTitle",
+   "agent.backend.providerDescription",
++  "agent.backend.thirdPartyHint",
++  "agent.backend.thirdPartyAccount",
++  "agent.backend.thirdPartyBinary",
++  "agent.backend.thirdPartyBinaryHelp",
++  "agent.backend.thirdPartyBinaryPlaceholder",
++  "agent.backend.thirdPartyDetectedBinary",
++  "agent.backend.thirdPartyNotFound",
++  "agent.backend.thirdPartyAuthHint",
++  "agent.backend.thirdPartyConnect",
++  "agent.backend.providerLoadFailed",
+   "agent.backend.codexHint",
+   "agent.backend.qoderHint",
+   "agent.backend.account",
+diff --git a/console/src/locales/vi.json b/console/src/locales/vi.json
+index 8f2fea0..0166a11 100644
+--- a/console/src/locales/vi.json
++++ b/console/src/locales/vi.json
+@@ -1637,6 +1637,16 @@
+       "thirdPartyDescription": "Sử dụng runtime tác nhân bên ngoài đã được cấp quyền thay cho mô hình QwenPaw.",
+       "providerTitle": "Chọn tác nhân bên thứ ba",
+       "providerDescription": "Thông tin xác thực được dùng chung trên thiết bị này; dự án và cuộc trò chuyện vẫn được tách riêng theo từng tác nhân.",
++      "thirdPartyHint": "Tác nhân bên thứ ba · Không gian làm việc của tác nhân",
++      "thirdPartyAccount": "Tài khoản",
++      "thirdPartyBinary": "Tệp thực thi",
++      "thirdPartyBinaryHelp": "Để trống để tự động phát hiện runtime hoặc nhập đường dẫn đầy đủ tới tệp thực thi của tác nhân này. QwenPaw cũng đọc PATH của backend.",
++      "thirdPartyBinaryPlaceholder": "Tự động phát hiện hoặc dán đường dẫn tệp thực thi",
++      "thirdPartyDetectedBinary": "Đã phát hiện runtime",
++      "thirdPartyNotFound": "Không tìm thấy runtime. Hãy cài đặt hoặc cấu hình tệp thực thi của tác nhân này.",
++      "thirdPartyAuthHint": "Xác thực bằng luồng đăng nhập hoặc CLI riêng của tác nhân này.",
++      "thirdPartyConnect": "Kết nối",
++      "providerLoadFailed": "Không thể tải danh sách tác nhân bên thứ ba. Chỉ hiển thị Codex và Qoder tích hợp.",
+       "codexHint": "ChatGPT OAuth · Không gian làm việc của tác nhân",
+       "qoderHint": "Tài khoản Qoder hoặc PAT · Không gian làm việc của tác nhân",
+       "account": "Tài khoản Codex",
+diff --git a/console/src/locales/zh.json b/console/src/locales/zh.json
+index f4d30ae..ccd59fe 100644
+--- a/console/src/locales/zh.json
++++ b/console/src/locales/zh.json
+@@ -890,6 +890,16 @@
+       "thirdPartyDescription": "使用已授权的外部 Agent Runtime，不依赖 QwenPaw 模型。",
+       "providerTitle": "选择第三方智能体",
+       "providerDescription": "授权在本机共享，项目与会话仍按智能体隔离。",
++      "thirdPartyHint": "第三方智能体 · 智能体工作区",
++      "thirdPartyAccount": "账户",
++      "thirdPartyBinary": "可执行文件",
++      "thirdPartyBinaryHelp": "留空将自动检测 runtime，也可以手动填写该智能体可执行文件的完整路径。QwenPaw 也会读取后端进程的 PATH。",
++      "thirdPartyBinaryPlaceholder": "自动检测，或粘贴可执行文件路径",
++      "thirdPartyDetectedBinary": "已检测到 runtime",
++      "thirdPartyNotFound": "未检测到 runtime。请安装或配置该智能体的可执行文件。",
++      "thirdPartyAuthHint": "请通过该智能体自带的登录流程或 CLI 完成认证。",
++      "thirdPartyConnect": "连接",
++      "providerLoadFailed": "无法加载第三方智能体列表，当前仅显示内置的 Codex 和 Qoder。",
+       "codexHint": "ChatGPT OAuth · 智能体工作区",
+       "qoderHint": "Qoder 账户或 PAT · 智能体工作区",
+       "account": "Codex 账户",
+diff --git a/console/src/pages/Settings/Agents/components/AgentBackendFields.module.less b/console/src/pages/Settings/Agents/components/AgentBackendFields.module.less
+index 3b00f74..546ac4f 100644
+--- a/console/src/pages/Settings/Agents/components/AgentBackendFields.module.less
++++ b/console/src/pages/Settings/Agents/components/AgentBackendFields.module.less
+@@ -258,6 +258,13 @@
+   color: var(--abf-accent);
+ }
+ 
++.catalogError {
++  margin: 10px 2px 0;
++  color: var(--abf-text-muted);
++  font-size: 11px;
++  line-height: 1.45;
++}
++
+ .providerConfig {
+   margin-top: 14px;
+   padding-top: 14px;
+diff --git a/console/src/pages/Settings/Agents/components/AgentBackendFields.test.tsx b/console/src/pages/Settings/Agents/components/AgentBackendFields.test.tsx
+index fd0bed9..8df5aa0 100644
+--- a/console/src/pages/Settings/Agents/components/AgentBackendFields.test.tsx
++++ b/console/src/pages/Settings/Agents/components/AgentBackendFields.test.tsx
+@@ -1,4 +1,10 @@
+-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
++import {
++  act,
++  fireEvent,
++  screen,
++  waitFor,
++  within,
++} from "@testing-library/react";
+ import { Form } from "antd";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ 
+@@ -60,9 +66,7 @@ vi.mock("react-i18next", () => ({
+ vi.mock("@/api/modules/harness", () => ({
+   harnessApi: {
+     status: vi.fn().mockResolvedValue(mockProvider),
+-    list: vi.fn().mockResolvedValue({
+-      providers: [],
+-    }),
++    list: vi.fn(),
+     listModels: vi.fn().mockResolvedValue({ models: [] }),
+     login: vi.fn(),
+     logout: vi.fn(),
+@@ -73,7 +77,46 @@ vi.mock("@/utils/clipboard", () => ({
+   copyText: mockCopyText,
+ }));
+ 
+-import { harnessApi } from "@/api/modules/harness";
++import { harnessApi, type HarnessProvider } from "@/api/modules/harness";
++
++const comingSoonProvider: HarnessProvider = {
++  id: "claude",
++  name: "Claude Code",
++  available: false,
++  coming_soon: true,
++  installed: false,
++  authenticated: false,
++  account: null,
++  runtime_path: null,
++  runtime_source: null,
++  error: null,
++  capabilities: mockProvider.capabilities,
++};
++
++const qoderProvider: HarnessProvider = {
++  ...mockProvider,
++  id: "qoder",
++  name: "Qoder",
++  authenticated: false,
++  account: null,
++  runtime_path: "/opt/qoder/qodercli",
++  runtime_source: "python-sdk",
++};
++
++function dshProvider(
++  overrides: Partial<HarnessProvider> = {},
++): HarnessProvider {
++  return {
++    ...mockProvider,
++    id: "dsh",
++    name: "DSH Agent",
++    authenticated: false,
++    account: null,
++    runtime_path: "/usr/local/bin/dsh",
++    runtime_source: "path",
++    ...overrides,
++  };
++}
+ 
+ vi.mock("@/hooks/useAppMessage", () => ({
+   useAppMessage: () => ({
+@@ -81,10 +124,10 @@ vi.mock("@/hooks/useAppMessage", () => ({
+   }),
+ }));
+ 
+-function BackendForm() {
++function BackendForm({ backend = "qwenpaw" }: { backend?: string } = {}) {
+   const [form] = Form.useForm();
+   return (
+-    <Form form={form} initialValues={{ backend: "qwenpaw" }}>
++    <Form form={form} initialValues={{ backend }}>
+       <AgentBackendFields form={form} open />
+     </Form>
+   );
+@@ -94,6 +137,9 @@ describe("AgentBackendFields", () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+     vi.mocked(harnessApi.status).mockResolvedValue(mockProvider);
++    vi.mocked(harnessApi.list).mockResolvedValue({
++      providers: [mockProvider, comingSoonProvider, qoderProvider],
++    });
+     mockCopyText.mockResolvedValue(undefined);
+   });
+ 
+@@ -117,8 +163,84 @@ describe("AgentBackendFields", () => {
+     expect(
+       await screen.findByText("agent.backend.providerTitle"),
+     ).toBeInTheDocument();
++    expect(await screen.findByText("Claude Code")).toBeInTheDocument();
++    expect(screen.getByText("Codex")).toBeInTheDocument();
++    expect(screen.getByText("Qoder")).toBeInTheDocument();
++    expect(screen.getByText("agent.backend.codexHint")).toBeInTheDocument();
++    expect(screen.getByText("agent.backend.qoderHint")).toBeInTheDocument();
++  });
++
++  it("renders an unknown backend from the catalog without Codex copy", async () => {
++    vi.mocked(harnessApi.list).mockResolvedValueOnce({
++      providers: [dshProvider()],
++    });
++    vi.mocked(harnessApi.status).mockResolvedValue(dshProvider());
++    renderWithProviders(<BackendForm backend="dsh" />);
++
++    expect(await screen.findByText("DSH Agent")).toBeInTheDocument();
++    expect(
++      screen.getByText("agent.backend.thirdPartyBinary"),
++    ).toBeInTheDocument();
++    expect(
++      screen.getByText("agent.backend.thirdPartyAccount"),
++    ).toBeInTheDocument();
++    expect(
++      screen.getByText("agent.backend.thirdPartyDetectedBinary"),
++    ).toBeInTheDocument();
++    expect(
++      screen.getByText("agent.backend.thirdPartyConnect"),
++    ).toBeInTheDocument();
++    expect(screen.queryByText("Codex")).not.toBeInTheDocument();
++    expect(
++      screen.queryByText("agent.backend.codexHint"),
++    ).not.toBeInTheDocument();
++    expect(screen.queryByText("agent.backend.binary")).not.toBeInTheDocument();
++    expect(screen.queryByText("agent.backend.account")).not.toBeInTheDocument();
++    expect(
++      screen.queryByText("agent.backend.codexNotFound"),
++    ).not.toBeInTheDocument();
++  });
++
++  it("keeps an unknown selected backend when the catalog omits it", async () => {
++    vi.mocked(harnessApi.list).mockResolvedValueOnce({
++      providers: [mockProvider, qoderProvider],
++    });
++    vi.mocked(harnessApi.status).mockResolvedValue(
++      dshProvider({ runtime_path: null, installed: true }),
++    );
++    renderWithProviders(<BackendForm backend="dsh" />);
++
++    expect(await screen.findByText("dsh")).toBeInTheDocument();
++    expect(
++      screen.getByText("agent.backend.thirdPartyBinary"),
++    ).toBeInTheDocument();
++    expect(
++      screen.getAllByText("agent.backend.thirdPartyNotFound").length,
++    ).toBeGreaterThan(0);
++  });
++
++  it("renders coming-soon providers as disabled cards", async () => {
++    renderWithProviders(<BackendForm />);
++    fireEvent.click(screen.getByText("agent.backend.thirdPartyTitle"));
++
++    const label = await screen.findByText("Claude Code");
++    const card = label.closest('[aria-disabled="true"]');
++    expect(card).not.toBeNull();
++    expect(label.closest("button")).toBeNull();
++    expect(
++      within(card as HTMLElement).getByText("harnesses.comingSoon"),
++    ).toBeInTheDocument();
++  });
++
++  it("falls back to Codex and Qoder with an error when the catalog fails", async () => {
++    vi.mocked(harnessApi.list).mockRejectedValueOnce(new Error("offline"));
++    renderWithProviders(<BackendForm />);
++    fireEvent.click(screen.getByText("agent.backend.thirdPartyTitle"));
++
++    expect(
++      await screen.findByText("agent.backend.providerLoadFailed"),
++    ).toBeInTheDocument();
+     expect(screen.getByText("Codex")).toBeInTheDocument();
+-    expect(screen.getByText("Claude Code")).toBeInTheDocument();
+     expect(screen.getByText("Qoder")).toBeInTheDocument();
+   });
+ 
+diff --git a/console/src/pages/Settings/Agents/components/AgentBackendFields.tsx b/console/src/pages/Settings/Agents/components/AgentBackendFields.tsx
+index 3df36f9..9c7d06c 100644
+--- a/console/src/pages/Settings/Agents/components/AgentBackendFields.tsx
++++ b/console/src/pages/Settings/Agents/components/AgentBackendFields.tsx
+@@ -26,11 +26,7 @@ import styles from "./AgentBackendFields.module.less";
+ 
+ const POLL_INTERVAL_MS = 2_000;
+ 
+-type ProviderId = "codex" | "qoder";
+-
+-interface ProviderOption {
+-  id: ProviderId;
+-  name: string;
++interface ProviderCopy {
+   hintKey: string;
+   accountKey: string;
+   binaryKey: string;
+@@ -42,10 +38,31 @@ interface ProviderOption {
+   connectKey: string;
+ }
+ 
+-const PROVIDERS: ProviderOption[] = [
+-  {
++interface ProviderOption extends ProviderCopy {
++  id: string;
++  name: string;
++  comingSoon: boolean;
++}
++
++// Copy reused by any backend that the runtime reports but the console does not
++// know about yet. Known providers keep their dedicated strings below.
++const GENERIC_PROVIDER_COPY: ProviderCopy = {
++  hintKey: "agent.backend.thirdPartyHint",
++  accountKey: "agent.backend.thirdPartyAccount",
++  binaryKey: "agent.backend.thirdPartyBinary",
++  binaryHelpKey: "agent.backend.thirdPartyBinaryHelp",
++  binaryPlaceholderKey: "agent.backend.thirdPartyBinaryPlaceholder",
++  detectedKey: "agent.backend.thirdPartyDetectedBinary",
++  notFoundKey: "agent.backend.thirdPartyNotFound",
++  authHintKey: "agent.backend.thirdPartyAuthHint",
++  connectKey: "agent.backend.thirdPartyConnect",
++};
++
++const PROVIDERS: Record<"codex" | "qoder", ProviderOption> = {
++  codex: {
+     id: "codex",
+     name: "Codex",
++    comingSoon: false,
+     hintKey: "agent.backend.codexHint",
+     accountKey: "agent.backend.account",
+     binaryKey: "agent.backend.binary",
+@@ -56,9 +73,10 @@ const PROVIDERS: ProviderOption[] = [
+     authHintKey: "agent.backend.apiKeyLoginHint",
+     connectKey: "harnesses.connect",
+   },
+-  {
++  qoder: {
+     id: "qoder",
+     name: "Qoder",
++    comingSoon: false,
+     hintKey: "agent.backend.qoderHint",
+     accountKey: "agent.backend.qoderAccount",
+     binaryKey: "agent.backend.qoderBinary",
+@@ -69,15 +87,41 @@ const PROVIDERS: ProviderOption[] = [
+     authHintKey: "agent.backend.qoderAuthHint",
+     connectKey: "agent.backend.qoderConnect",
+   },
+-];
++};
+ 
+-interface AgentBackendFieldsProps {
+-  form: ReturnType<typeof Form.useForm>[0];
+-  open: boolean;
++// Used before the catalog loads and whenever the catalog request fails so the
++// settings page never loses the providers it has always supported.
++const FALLBACK_PROVIDERS: ProviderOption[] = [PROVIDERS.codex, PROVIDERS.qoder];
++
++function knownProvider(id: string): ProviderOption | undefined {
++  if (id === "codex" || id === "qoder") return PROVIDERS[id];
++  return undefined;
++}
++
++function genericProvider(id: string, name?: string): ProviderOption {
++  return {
++    id,
++    name: name?.trim() || id,
++    comingSoon: false,
++    ...GENERIC_PROVIDER_COPY,
++  };
+ }
+ 
+ function providerOption(backend: AgentBackend): ProviderOption {
+-  return PROVIDERS.find((item) => item.id === backend) ?? PROVIDERS[0];
++  return knownProvider(backend) ?? genericProvider(backend);
++}
++
++function toProviderOption(item: HarnessProvider): ProviderOption {
++  const known = knownProvider(item.id);
++  return {
++    ...(known ?? genericProvider(item.id, item.name)),
++    comingSoon: item.coming_soon,
++  };
++}
++
++interface AgentBackendFieldsProps {
++  form: ReturnType<typeof Form.useForm>[0];
++  open: boolean;
+ }
+ 
+ export function AgentBackendFields({ form, open }: AgentBackendFieldsProps) {
+@@ -85,13 +129,51 @@ export function AgentBackendFields({ form, open }: AgentBackendFieldsProps) {
+   const { message } = useAppMessage();
+   const backend =
+     (Form.useWatch("backend", form) as AgentBackend | undefined) ?? "qwenpaw";
+-  const selectedProvider = providerOption(backend);
++  const [providerCatalog, setProviderCatalog] =
++    useState<ProviderOption[]>(FALLBACK_PROVIDERS);
++  const [catalogFailed, setCatalogFailed] = useState(false);
+   const [provider, setProvider] = useState<HarnessProvider | null>(null);
+   const [connecting, setConnecting] = useState(false);
+   const [checking, setChecking] = useState(false);
+   const pollTimer = useRef<number | undefined>(undefined);
+   const pollTimeout = useRef<number | undefined>(undefined);
+ 
++  const selectedProvider =
++    providerCatalog.find((item) => item.id === backend) ??
++    providerOption(backend);
++  const gridProviders =
++    backend === "qwenpaw" || providerCatalog.some((item) => item.id === backend)
++      ? providerCatalog
++      : [...providerCatalog, providerOption(backend)];
++  const defaultThirdPartyBackend =
++    providerCatalog.find((item) => !item.comingSoon)?.id ?? "codex";
++
++  useEffect(() => {
++    if (!open) return;
++    let cancelled = false;
++    void harnessApi
++      .list()
++      .then(({ providers }) => {
++        if (cancelled) return;
++        setProviderCatalog(
++          providers.length
++            ? providers.map(toProviderOption)
++            : FALLBACK_PROVIDERS,
++        );
++        setCatalogFailed(false);
++      })
++      .catch(() => {
++        if (cancelled) return;
++        setProviderCatalog((current) =>
++          current.length ? current : FALLBACK_PROVIDERS,
++        );
++        setCatalogFailed(true);
++      });
++    return () => {
++      cancelled = true;
++    };
++  }, [open]);
++
+   const stopPolling = useCallback(() => {
+     if (pollTimer.current) window.clearTimeout(pollTimer.current);
+     if (pollTimeout.current) window.clearTimeout(pollTimeout.current);
+@@ -262,7 +344,9 @@ export function AgentBackendFields({ form, open }: AgentBackendFieldsProps) {
+             backend !== "qwenpaw" ? styles.selected : ""
+           }`}
+           onClick={() =>
+-            selectBackend(backend === "qwenpaw" ? "codex" : backend)
++            selectBackend(
++              backend === "qwenpaw" ? defaultThirdPartyBackend : backend,
++            )
+           }
+         >
+           <span className={styles.typeIcon}>
+@@ -284,7 +368,25 @@ export function AgentBackendFields({ form, open }: AgentBackendFieldsProps) {
+           </div>
+ 
+           <div className={styles.providerGrid}>
+-            {PROVIDERS.map((item) => {
++            {gridProviders.map((item) => {
++              if (item.comingSoon) {
++                return (
++                  <div
++                    key={item.id}
++                    className={styles.providerCardDisabled}
++                    aria-disabled="true"
++                  >
++                    <span className={styles.providerIcon}>
++                      <Blocks size={18} />
++                    </span>
++                    <span className={styles.providerCopy}>
++                      <strong>{item.name}</strong>
++                      <small>{t("harnesses.comingSoon")}</small>
++                    </span>
++                    <Clock3 size={14} />
++                  </div>
++                );
++              }
+               const selected = backend === item.id;
+               return (
+                 <button
+@@ -308,18 +410,14 @@ export function AgentBackendFields({ form, open }: AgentBackendFieldsProps) {
+                 </button>
+               );
+             })}
+-            <div className={styles.providerCardDisabled}>
+-              <span className={styles.providerIcon}>
+-                <Blocks size={18} />
+-              </span>
+-              <span className={styles.providerCopy}>
+-                <strong>Claude Code</strong>
+-                <small>{t("harnesses.comingSoon")}</small>
+-              </span>
+-              <Clock3 size={14} />
+-            </div>
+           </div>
+ 
++          {catalogFailed && (
++            <p className={styles.catalogError} role="alert">
++              {t("agent.backend.providerLoadFailed")}
++            </p>
++          )}
++
+           <div className={styles.providerConfig}>
+             <Form.Item
+               name={["backend_settings", "binary"]}
+-- 
+2.53.0
+
