@@ -71,7 +71,7 @@ qwenpaw-dsh/
 ## 未完成 / 已知限制（"还没做到的"）
 
 1. **审批卡标题可读性**：权限请求缺 title 时卡片显示兜底名（"external-agent"），可补传工具标题/命令提升可读性
-2. **MCP 残余**：策略/allowlist 不可经 ACP 传递（仅工具集）；sse 跳过；HTTP/SSE 未做 live（本机无对应卡）
+2. **MCP 残余**：策略/allowlist 不可经 ACP 传递（仅工具集）；**HTTP(streamable_http) 已端到端实测通过、SSE 已实测为优雅跳过**（门7，见 `docs/mcp-http-sse.md`）——SSE 仍是 DSH 侧硬缺口（上游不支持），另注意 SSE 卡 enabled 会触发宿主侧 5 次重连 + 熔断 300s
 3. **Skills 投影残余**：影子资源（符号链接）在沙箱下的读取未做 live 资源验证（夹具无资源）；同一 adapter 并发不同技能集会触发池重建（宿主按 agent 串行，暂无影响）
 4. **`context_usage`**：ACP 有 `usage_update`，宿主事件模型暂无通道（依赖 PR-3）
 5. **图片残余**：探测取自 initialize 的默认路由（会话内切模型未重探）；纯图无文本时首块为空 `text_block`
