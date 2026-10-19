@@ -2,7 +2,7 @@
 
 把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw**，成为一等智能体：出现在智能体列表、可在控制台直接对话、可被其他智能体通过 `chat_with_agent` 调用。全程通过标准 **ACP v1**（stdio）驱动，**不改任何一方的核心代码**。
 
-> **状态**：v0.1 已发布；v0.2 进行中 —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）、✅ Skills 投影；⏳ MCP / 图片投影。
+> **状态**：v0.1 已发布；v0.2 进行中 —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）、✅ Skills 投影、✅ MCP 投影；⏳ 图片投影。
 > 路线图、未完成事项与开发约定见 [`AGENTS.md`](./AGENTS.md)。
 
 ## 组件
@@ -132,7 +132,15 @@ QwenPaw 工作区技能会投影进 DSH 会话（DSH 只接受 `[a-z0-9-]` 技�
 - **变更检测**：技能快照（kebab 名 + 宿主 revision）纳入进程池键，变化即自动重建；
 - **映射**：`skills_map.json` 保留 kebab ↔ 源技能双向对应。
 
-### 8. 安全模型
+### 8. MCP 投影
+
+QwenPaw 配置的 MCP servers（工作区驱动卡）会投影进 DSH 会话（`session/new.mcpServers`）：
+
+- **映射**（`core/mcp.py`）：stdio → `McpServerStdio`（命令转绝对路径）、http/streamable_http → `HttpMcpServer`；sse 跳过（DSH 不支持）；env/headers 经宿主 `revealed_*` 取明文、绝不落日志；
+- **坏 server 容错**：DSH 以 `failOnStartupError` 挂载 MCP，任一坏 server 会让 `session/new` 整体失败 → 适配器自动**去掉 MCP 重试一次**，会话保持可用并告警；
+- **会话级**：随 `session/new` / `session/resume` 携带（resume 就地刷新），不参与进程池键。
+
+### 9. 安全模型
 
 - 三档沙箱由 DSH 强制执行（`read-only` / `workspace-write` / `danger-full-access`）；
 - 审批默认 **fail-closed**：无人应答 → 超时自动拒绝；拒绝后模型被要求停止而非绕行；
