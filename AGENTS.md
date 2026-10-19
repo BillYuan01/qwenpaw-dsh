@@ -75,8 +75,8 @@ qwenpaw-dsh/
 3. **Skills 投影残余**：影子资源（符号链接）在沙箱下的读取未做 live 资源验证（夹具无资源）；同一 adapter 并发不同技能集会触发池重建（宿主按 agent 串行，暂无影响）
 4. **`context_usage`**：ACP 有 `usage_update`，宿主事件模型暂无通道（依赖 PR-3）
 5. **图片残余**：探测取自 initialize 的默认路由（会话内切模型未重探）；纯图无文本时首块为空 `text_block`
-6. **契约测试套件**（s01–s06）暂未收录进本仓库
-7. **未验证**：`hub` / `tui` / `acp` 三种运行形态的插件加载（`app` 与 `desktop` 已验，见 `docs/forms-matrix.md`）；跨 DSH 版本 resume；SSE/HTTP MCP
+6. **契约测试套件**（s01–s06）✅ 已收录并跑通：`qwenpaw-dsh/tests/contract/`（`acp` 与 `qwenpaw` 两 profile 各 **6 passed**）
+7. **未验证**：`hub` / `tui` / `acp` 三种运行形态的插件加载（`app`/`desktop` 已验、`task` 已证不装载，见 `docs/forms-matrix.md`）；跨 DSH 版本 resume（SSE/HTTP MCP 已于门7 验证，见 `docs/mcp-http-sse.md`）
 8. **模型目录差异**：QwenPaw 控制台对"不在后端目录中的模型"有归一化行为（选择模型时注意）
 9. **DSH 为 developer preview**（0.2.0-rc.2）：仅依赖标准 ACP v1 + feature-detect；`SUPPORTED_DSH=<0.3.0` 守卫
 

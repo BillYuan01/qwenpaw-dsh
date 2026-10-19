@@ -2,8 +2,8 @@
 
 把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw**，成为一等智能体：出现在智能体列表、可在控制台直接对话、可被其他智能体通过 `chat_with_agent` 调用。全程通过标准 **ACP v1**（stdio）驱动，**不改任何一方的核心代码**。
 
-> **状态**：v0.1 已发布；**v0.2 已完成（5/5）** —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）、✅ Skills 投影、✅ MCP 投影、✅ 图片附件。
-> 路线图、未完成事项与开发约定见 [`AGENTS.md`](./AGENTS.md)。
+> **状态**：**v1.0.0（2026-10-19）** —— 能力齐备且经 live 实测：✅ 真流式 · ✅ 审批对齐 · ✅ Skills 投影 · ✅ MCP 投影（stdio + HTTP）· ✅ 图片附件 · ✅ 端到端契约套件（s01–s06）。
+> 一页纸现状见 [`STATUS.md`](./STATUS.md)；路线图、未完成事项与开发约定见 [`AGENTS.md`](./AGENTS.md)；逐版变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
 
 ## 组件
 
