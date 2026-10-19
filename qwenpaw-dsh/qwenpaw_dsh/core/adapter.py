@@ -33,6 +33,7 @@ from qwenpaw.harnesses.events import (
 
 from ..host import HostContext
 from . import event_mapper as mapper
+from . import mcp as mcp_projection
 from . import skills as skills_projection
 from .acp_client import DshConnection
 from .permissions import resolve_permission_mode
@@ -74,6 +75,10 @@ class DshAdapter:
         # connection; "" means "no skills" and no ``--patch`` arg.
         self._skills_token = ""
         self._skills_plan: skills_projection.SkillProjection | None = None
+        # MCP projection state (refreshed at the start of every turn). MCP is
+        # session-scoped — the servers ride ``session/new`` / ``session/resume``
+        # — so unlike skills it is *not* part of the pool key.
+        self._mcp_plan = mcp_projection.MCPProjection()
 
     # ------------------------------------------------------------------ state
     def _state_path(self) -> Path:
@@ -160,6 +165,22 @@ class DshAdapter:
         self._skills_token = plan.snapshot
         await self._close_connections()
 
+    def _refresh_mcp(self, settings: dict[str, Any]) -> None:
+        """Project this turn's ``_runtime_capabilities.mcp_servers`` for DSH.
+
+        Pure mapping (no ACP call, no pool impact): the projection is consumed
+        when the session is created/resumed. Per-server failures are fail-soft
+        and never fail a turn; secrets are never logged.
+        """
+        try:
+            plan = mcp_projection.project_mcp_servers(
+                mcp_projection.runtime_mcp_servers(settings),
+            )
+        except Exception:  # noqa: BLE001 — never fail a turn on projection
+            log.warning("dsh: MCP projection failed; continuing without MCP", exc_info=True)
+            plan = mcp_projection.MCPProjection()
+        self._mcp_plan = plan
+
     async def _close_connections(self) -> None:
         async with self._lock:
             for connection in list(self._connections.values()):
@@ -188,6 +209,7 @@ class DshAdapter:
                 resumed = await connection.resume_session(
                     cwd=str(cwd),
                     acp_session_id=acp_session_id,
+                    mcp_servers=self._mcp_plan.as_list(),
                 )
                 self._live[qwenpaw_session_id] = (connection.key, resumed)
                 return resumed
@@ -197,7 +219,7 @@ class DshAdapter:
                     qwenpaw_session_id,
                 )
 
-        created = await connection.new_session(cwd=str(cwd))
+        created = await self._new_session(connection, qwenpaw_session_id, cwd)
         self._live[qwenpaw_session_id] = (connection.key, created)
         self._records[qwenpaw_session_id] = {
             "acpSessionId": created,
@@ -207,6 +229,34 @@ class DshAdapter:
         }
         self._save_state()
         return created
+
+    async def _new_session(
+        self,
+        connection: DshConnection,
+        qwenpaw_session_id: str,
+        cwd: Path,
+    ) -> str:
+        """Create an ACP session, retrying once without MCP on failure.
+
+        DSH mounts ACP MCP servers with ``failOnStartupError: true`` (spike
+        s05): one bad server fails the whole call. Dropping MCP keeps the
+        session usable. No MCP definitions -> plain ``session/new``.
+        """
+        servers = self._mcp_plan.as_list()
+        try:
+            return await connection.new_session(cwd=str(cwd), mcp_servers=servers)
+        except Exception:  # noqa: BLE001 — retried without MCP below
+            if not servers:
+                raise
+            log.warning(
+                "dsh: session/new failed with %d MCP server(s) [%s]; retrying "
+                "without MCP — MCP disabled for session %s",
+                len(servers),
+                ", ".join(self._mcp_plan.names) or "<unnamed>",
+                qwenpaw_session_id,
+                exc_info=True,
+            )
+            return await connection.new_session(cwd=str(cwd), mcp_servers=[])
 
     # ------------------------------------------------------------------ status
     async def status(self) -> HarnessProvider:
@@ -355,6 +405,7 @@ class DshAdapter:
     ) -> AsyncIterator[HarnessEvent]:
         try:
             await self._refresh_skills(settings)
+            self._refresh_mcp(settings)
             connection = await self._connection()
             acp_session_id = await self._ensure_session(connection, session_id, cwd)
             connection.client.set_approval_context(

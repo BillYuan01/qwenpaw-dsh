@@ -374,15 +374,28 @@ class DshConnection:
             raise
 
     # -- session helpers ---------------------------------------------------
-    async def new_session(self, cwd: str) -> str:
-        response = await self.conn.new_session(cwd=str(cwd))
+    async def new_session(
+        self,
+        cwd: str,
+        mcp_servers: list[Any] | None = None,
+    ) -> str:
+        response = await self.conn.new_session(
+            cwd=str(cwd),
+            mcp_servers=mcp_servers,
+        )
         self._last_new_session_response = response
         return str(getattr(response, "session_id", ""))
 
-    async def resume_session(self, cwd: str, acp_session_id: str) -> str:
+    async def resume_session(
+        self,
+        cwd: str,
+        acp_session_id: str,
+        mcp_servers: list[Any] | None = None,
+    ) -> str:
         response = await self.conn.resume_session(
             cwd=str(cwd),
             session_id=acp_session_id,
+            mcp_servers=mcp_servers,
         )
         return str(getattr(response, "session_id", acp_session_id) or acp_session_id)
 
