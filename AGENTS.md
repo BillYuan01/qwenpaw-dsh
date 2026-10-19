@@ -20,11 +20,12 @@
 - 桥插件：真流式（长答案 93–172 chunks，基线为 1）、权限预设热切换（PID 不变）、模型目录 `_meta`（协议 v1）
 - 契约测试：s01–s06 判据已在两个 profile 上通过（套件暂未收录进本仓库，见"未完成 #6"）
 
-**v0.2（进行中，2/5）**
+**v0.2（进行中，3/5）**
 
 - ✅ 真流式：`qwenpaw` profile + 桥 → 控制台逐 token；standalone 实测 text_chunks=65（基线 1）
 - ✅ 审批对齐：权限请求 → 控制台审批卡（批准/拒绝/超时三径 live 实测）；`approval_level` → DSH 权限模式（OFF/AUTO/STRICT 三档 live 实测）
-- ⏳ 剩余：MCP 投影（#2）/ Skills 投影（#3）/ 图片附件（#4）
+- ✅ Skills 投影：kebab 归一化 + 影子目录 + `--patch` 注入；live 实测技能列表与加载（`snake_case_skill` → `snake-case-skill`）
+- ⏳ 剩余：MCP 投影（#2）/ 图片附件（#4）
 
 ## 实现地图（代码结构）
 
@@ -39,7 +40,8 @@ qwenpaw-dsh/
 │  │  ├─ adapter.py          DshAdapter：进程池、会话映射与恢复、回合、审批上下文路由
 │  │  ├─ acp_client.py       ACP v1 客户端：spawn / initialize / session/* / request_permission
 │  │  ├─ event_mapper.py     session/update → HarnessEvent（纯函数）
-│  │  └─ permissions.py      approval_level → DSH 权限模式映射（单一来源）
+│  │  ├─ permissions.py      approval_level → DSH 权限模式映射（单一来源）
+│  │  └─ skills.py           技能投影（kebab 归一化、影子目录、映射与 patch）
 │  └─ loaders/               装载层：monkeypatch（2.2.x）/ official（2.3+ 预留）/ direct（独立运行）/ port（接口）
 └─ tests/                    冒烟 + 流式验收 + 单元测试（见「开发约定 · 验证」）
 ```
@@ -50,7 +52,7 @@ qwenpaw-dsh/
 
 1. **审批卡片** ✅（2026-10-18）：权限请求 → 宿主审批卡（批准/拒绝/超时三径 live 实测通过）；`approval_level`（STRICT/SMART/AUTO/OFF）→ DSH 权限模式（read-only/workspace-write/danger-full-access）对齐（实现：`qwenpaw_dsh/approvals.py` + `qwenpaw_dsh/core/permissions.py`；缝：`host.py` 的 `ApprovalPort`）。行为备注：workspace-write 下越界操作先被沙箱硬拒绝、由模型提权重试触发卡片；批准为 one-shot（不构成会话级放宽）
 2. **MCP 投影**：`session/new.mcpServers`（stdio 需绝对路径；不支持 sse；坏 server 需"去 MCP 重试一次"）
-3. **Skills 投影**：`--patch customSkillDirs` + **kebab 归一化与双向映射**（DSH 强制 `[a-z0-9-]`，snake_case 技能会被静默丢弃）
+3. **Skills 投影** ✅（2026-10-18）：kebab 归一化 + 影子目录（**重写 frontmatter `name`**——DSH 技能名以 frontmatter 为准，非目录名；资源符号链接、复制兜底）+ `--patch customSkillDirs` 注入 + 快照进池键（变化自动重建）；standalone 14 项与 live 实测通过。实现：`qwenpaw_dsh/core/skills.py`
 4. **图片附件**：内联 base64 图片块（需目标路由声明 image 能力，先探测再发）
 5. **切 `qwenpaw` profile** ✅（2026-10-18）：安装桥 profile 后控制台获得真流式；standalone 实测 text_chunks=65（基线 1）
 
@@ -67,7 +69,7 @@ qwenpaw-dsh/
 
 1. **审批卡标题可读性**：权限请求缺 title 时卡片显示兜底名（"external-agent"），可补传工具标题/命令提升可读性
 2. **MCP**：策略/allowlist 不可经 ACP 传递；sse 不支持
-3. **Skills**：归一化层未实现（当前 snake_case 技能进不去）
+3. **Skills 投影残余**：影子资源（符号链接）在沙箱下的读取未做 live 资源验证（夹具无资源）；同一 adapter 并发不同技能集会触发池重建（宿主按 agent 串行，暂无影响）
 4. **`context_usage`**：ACP 有 `usage_update`，宿主事件模型暂无通道（依赖 PR-3）
 5. **图片**：v0.1 附件按文本路径转发；base64 未实现
 6. **契约测试套件**（s01–s06）暂未收录进本仓库

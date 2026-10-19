@@ -2,7 +2,7 @@
 
 把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw**，成为一等智能体：出现在智能体列表、可在控制台直接对话、可被其他智能体通过 `chat_with_agent` 调用。全程通过标准 **ACP v1**（stdio）驱动，**不改任何一方的核心代码**。
 
-> **状态**：v0.1 已发布；v0.2 进行中 —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）；⏳ MCP / Skills / 图片投影。
+> **状态**：v0.1 已发布；v0.2 进行中 —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）、✅ Skills 投影；⏳ MCP / 图片投影。
 > 路线图、未完成事项与开发约定见 [`AGENTS.md`](./AGENTS.md)。
 
 ## 组件
@@ -122,7 +122,17 @@ QwenPaw 侧的四档审批级别，自动映射到 DSH 的沙箱权限模式（`
 
 安装方式：`profile/install.sh` 把桥作为依赖挂进 `~/.dsh/profiles/qwenpaw`（符号链接 + 绝对路径依赖），与 dsh 插件系统同构、可整体卸载。
 
-### 7. 安全模型
+### 7. Skills 投影
+
+QwenPaw 工作区技能会投影进 DSH 会话（DSH 只接受 `[a-z0-9-]` 技能名，且以 **SKILL.md frontmatter 的 `name`** 为准）：
+
+- **归一化**：snake_case 等 → kebab（`core/skills.py`；确定性冲突消解 `-2`/`-3`）；
+- **影子目录**：`<state_dir>/skills_shadow/<kebab>/`，SKILL.md 重写 name 为真实文件、其余资源符号链接（复制兜底）；
+- **注入**：生成 `skills.patch.yml`（`customSkillDirs`），spawn 时以 `--patch` 叠加（无技能则不加）；
+- **变更检测**：技能快照（kebab 名 + 宿主 revision）纳入进程池键，变化即自动重建；
+- **映射**：`skills_map.json` 保留 kebab ↔ 源技能双向对应。
+
+### 8. 安全模型
 
 - 三档沙箱由 DSH 强制执行（`read-only` / `workspace-write` / `danger-full-access`）；
 - 审批默认 **fail-closed**：无人应答 → 超时自动拒绝；拒绝后模型被要求停止而非绕行；
