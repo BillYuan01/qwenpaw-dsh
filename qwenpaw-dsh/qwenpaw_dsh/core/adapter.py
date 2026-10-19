@@ -33,6 +33,7 @@ from qwenpaw.harnesses.events import (
 
 from ..host import HostContext
 from . import event_mapper as mapper
+from . import images as image_codec
 from . import mcp as mcp_projection
 from . import skills as skills_projection
 from .acp_client import DshConnection
@@ -417,16 +418,27 @@ class DshAdapter:
             while not connection.client.queue.empty():
                 connection.client.queue.get_nowait()
 
-            prompt_text = self._compose_prompt(prompt, attachments)
+            prompt_text, images = self._compose_prompt(
+                prompt,
+                attachments,
+                supports_image=bool(getattr(connection, "supports_image", False)),
+            )
             result: dict[str, Any] = {}
             settled = asyncio.Event()
 
             async def _run_prompt() -> None:
                 try:
-                    result["response"] = await connection.prompt(
-                        acp_session_id,
-                        prompt_text,
-                    )
+                    if images:
+                        result["response"] = await connection.prompt(
+                            acp_session_id,
+                            prompt_text,
+                            images=images,
+                        )
+                    else:
+                        result["response"] = await connection.prompt(
+                            acp_session_id,
+                            prompt_text,
+                        )
                 except Exception as exc:  # noqa: BLE001
                     result["error"] = exc
                 finally:
@@ -505,12 +517,42 @@ class DshAdapter:
     def _compose_prompt(
         prompt: str,
         attachments: list[HarnessAttachment] | None,
-    ) -> str:
+        *,
+        supports_image: bool = False,
+    ) -> tuple[str, list[tuple[str, str]]]:
+        """Split attachments into prompt text plus inline ``(base64, mime)`` images.
+
+        * an ``image`` attachment on an image-capable connection is read and
+          inlined (no extra text line — matches spike s06);
+        * every other case (``file``, probe says no, unknown suffix, unreadable,
+          larger than :data:`qwenpaw_dsh.core.images.MAX_IMAGE_BYTES`) keeps the
+          v0.1 text-path forwarding with a log line on the degrade paths.
+        """
         text = prompt or ""
+        images: list[tuple[str, str]] = []
+        had_image = False
         for attachment in attachments or []:
             name = attachment.name or Path(attachment.path).name
+            kind = str(getattr(attachment.kind, "value", attachment.kind))
+            if kind == "image":
+                had_image = True
+                if supports_image:
+                    encoded, reason = image_codec.encode_image(attachment.path)
+                    if encoded is not None:
+                        images.append((encoded.data, encoded.mime))
+                        continue
+                    log.warning(
+                        "dsh: image attachment %r forwarded as a text path: %s",
+                        name,
+                        reason,
+                    )
             text += f"\n\nAttached file {name}: {attachment.path}"
-        return text
+        if had_image and not supports_image:
+            log.info(
+                "dsh: connection does not advertise image prompts; image "
+                "attachments forwarded as text paths",
+            )
+        return text, images
 
     # ------------------------------------------------------------------ misc
     def _capabilities(self) -> Any:

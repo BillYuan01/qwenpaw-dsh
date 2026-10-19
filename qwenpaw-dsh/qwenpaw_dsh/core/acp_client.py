@@ -14,7 +14,7 @@ import logging
 from contextlib import AsyncExitStack
 from typing import Any
 
-from acp import PROTOCOL_VERSION, spawn_agent_process, text_block
+from acp import PROTOCOL_VERSION, image_block, spawn_agent_process, text_block
 from acp.schema import ClientCapabilities, Implementation
 
 from ..host import ApprovalDecision, ApprovalPort, ApprovalRequest
@@ -52,6 +52,31 @@ def _unsupported(name: str) -> Exception:
         return RequestError(code=-32601, message=f"dsh client does not support {name}")
     except Exception:  # noqa: BLE001
         return RuntimeError(f"dsh client does not support {name}")
+
+
+def _field(obj: Any, *names: str) -> Any:
+    """Read the first present attribute/key (duck-typed object or dict)."""
+    for name in names:
+        value = getattr(obj, name, None)
+        if value is not None:
+            return value
+        if isinstance(obj, dict) and name in obj:
+            return obj[name]
+    return None
+
+
+def prompt_capabilities_of(initialize_response: Any) -> Any:
+    """Extract ``agentCapabilities.promptCapabilities`` from ``initialize``.
+
+    Dict/object compatible; a missing block returns ``None`` (unsupported).
+    """
+    agent = _field(initialize_response, "agent_capabilities", "agentCapabilities")
+    return _field(agent, "prompt_capabilities", "promptCapabilities")
+
+
+def image_supported(prompt_capabilities: Any) -> bool:
+    """True only when the probe explicitly advertises inline image prompts."""
+    return bool(_field(prompt_capabilities, "image"))
 
 
 # ACP option ids are agent-chosen; the protocol ``kind`` carries the semantics.
@@ -318,6 +343,7 @@ class DshConnection:
         process: Any,
         client: DshTurnClient,
         key: tuple,
+        prompt_capabilities: Any = None,
     ) -> None:
         self.stack = stack
         self.conn = conn
@@ -325,6 +351,9 @@ class DshConnection:
         self.client = client
         self.key = key
         self._last_new_session_response: Any = None
+        # ``initialize`` -> ``agentCapabilities.promptCapabilities`` (None when
+        # the agent did not advertise one; treated as "no image prompts").
+        self._prompt_capabilities = prompt_capabilities
 
     @property
     def alive(self) -> bool:
@@ -368,10 +397,27 @@ class DshConnection:
                     "DSH ACP protocol mismatch: "
                     f"{getattr(initialized, 'protocol_version', None)}",
                 )
-            return cls(stack=stack, conn=conn, process=process, client=client, key=key)
+            return cls(
+                stack=stack,
+                conn=conn,
+                process=process,
+                client=client,
+                key=key,
+                prompt_capabilities=prompt_capabilities_of(initialized),
+            )
         except Exception:
             await stack.aclose()
             raise
+
+    @property
+    def prompt_capabilities(self) -> Any:
+        """The raw prompt-capability probe (object or dict); read-only."""
+        return self._prompt_capabilities
+
+    @property
+    def supports_image(self) -> bool:
+        """Whether inline base64 image blocks may be sent on this connection."""
+        return image_supported(self._prompt_capabilities)
 
     # -- session helpers ---------------------------------------------------
     async def new_session(
@@ -417,9 +463,23 @@ class DshConnection:
             value=value,
         )
 
-    async def prompt(self, acp_session_id: str, text: str) -> Any:
+    async def prompt(
+        self,
+        acp_session_id: str,
+        text: str,
+        images: list[tuple[str, str]] | None = None,
+    ) -> Any:
+        """Send text plus optional inline ``(base64, mime)`` image blocks.
+
+        Block order matches spike s06: the text block first, then images in
+        attachment order. ``images=None`` / ``[]`` reproduces the v0.1 call
+        exactly (a single text block).
+        """
+        blocks: list[Any] = [text_block(text)]
+        for data, mime in images or []:
+            blocks.append(image_block(data, mime))
         return await self.conn.prompt(
-            prompt=[text_block(text)],
+            prompt=blocks,
             session_id=acp_session_id,
         )
 
