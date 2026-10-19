@@ -33,6 +33,7 @@ from qwenpaw.harnesses.events import (
 
 from ..host import HostContext
 from . import event_mapper as mapper
+from . import skills as skills_projection
 from .acp_client import DshConnection
 from .permissions import resolve_permission_mode
 
@@ -68,6 +69,11 @@ class DshAdapter:
         self._records: dict[str, dict[str, Any]] = self._load_state()
         self._models_cache: tuple[float, list[HarnessModel], dict[str, str]] | None = None
         self._lock = asyncio.Lock()
+        # Skills projection state (refreshed at the start of every turn). The
+        # token is part of the pool key, so a skills change rebuilds the
+        # connection; "" means "no skills" and no ``--patch`` arg.
+        self._skills_token = ""
+        self._skills_plan: skills_projection.SkillProjection | None = None
 
     # ------------------------------------------------------------------ state
     def _state_path(self) -> Path:
@@ -106,6 +112,7 @@ class DshAdapter:
             self._profile,
             self._permission_mode,
             self._approval_policy,
+            self._skills_token,
         )
 
     async def _connection(self) -> DshConnection:
@@ -117,9 +124,12 @@ class DshAdapter:
             resolved = shutil.which(self._binary) or self._binary
             env = dict(os.environ)
             env["DSH_PERMISSION_MODE"] = self._permission_mode
+            args = ["--profile", self._profile]
+            if self._skills_plan is not None:
+                args += self._skills_plan.command_args()
             connection = await DshConnection.open(
                 binary=resolved,
-                args=["--profile", self._profile],
+                args=args,
                 env=env,
                 cwd=str(Path.home()),
                 key=key,
@@ -127,6 +137,38 @@ class DshAdapter:
             )
             self._connections[key] = connection
             return connection
+
+    async def _refresh_skills(self, settings: dict[str, Any]) -> None:
+        """Project this turn's ``_runtime_capabilities.skills`` for DSH.
+
+        A changed snapshot (kebab names + revisions) closes every pooled
+        connection so the next ``_connection()`` boots with the new
+        ``--patch``. Projection failures are fail-soft: the turn runs with the
+        previous (or no) skills rather than breaking.
+        """
+        try:
+            plan = skills_projection.project_skills(
+                self.state_dir,
+                skills_projection.runtime_skills(settings),
+            )
+        except Exception:  # noqa: BLE001 — never fail a turn on projection
+            log.warning("dsh: skills projection failed; continuing without it", exc_info=True)
+            plan = skills_projection.SkillProjection()
+        self._skills_plan = plan
+        if plan.snapshot == self._skills_token:
+            return
+        self._skills_token = plan.snapshot
+        await self._close_connections()
+
+    async def _close_connections(self) -> None:
+        async with self._lock:
+            for connection in list(self._connections.values()):
+                try:
+                    await connection.aclose()
+                except Exception:  # noqa: BLE001
+                    log.debug("dsh: connection close failed", exc_info=True)
+            self._connections.clear()
+            self._live.clear()
 
     async def _ensure_session(
         self,
@@ -299,13 +341,7 @@ class DshAdapter:
                 await connection.close_session(live[1])
 
     async def stop(self) -> None:
-        for connection in list(self._connections.values()):
-            try:
-                await connection.aclose()
-            except Exception:  # noqa: BLE001
-                log.debug("dsh: connection close failed", exc_info=True)
-        self._connections.clear()
-        self._live.clear()
+        await self._close_connections()
 
     # ------------------------------------------------------------------ turns
     async def run_turn(
@@ -318,6 +354,7 @@ class DshAdapter:
         attachments: list[HarnessAttachment] | None = None,
     ) -> AsyncIterator[HarnessEvent]:
         try:
+            await self._refresh_skills(settings)
             connection = await self._connection()
             acp_session_id = await self._ensure_session(connection, session_id, cwd)
             connection.client.set_approval_context(
