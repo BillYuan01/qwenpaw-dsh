@@ -18,6 +18,7 @@ loader feature-detects an official entry point (QwenPaw 2.3+).
 - ✅ Tests: `tests/smoke_adapter.py`, `tests/stream_check.py`,
   `tests/test_permission_mode.py`, `tests/test_approval_port.py`,
   `tests/test_loader_wiring.py`
+- ✅ 端到端契约套件 s01–s06: `tests/contract/`（真实 `dsh` + ACP v1；两种 profile 均 6 passed）
 - ⏳ Next: MCP/skills projection, image attachments, `context_usage` channel (needs PR-3)
 
 ## Install

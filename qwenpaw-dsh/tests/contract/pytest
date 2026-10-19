@@ -1,0 +1,18 @@
+#!/bin/sh
+# Run the DSH <-> QwenPaw contract suite.
+#
+# Uses the shared QwenPaw interpreter by default (override with
+# DSH_CONTRACT_PYTHON). pytest/pytest-asyncio must be importable by that
+# interpreter; `.vendor/` is added to PYTHONPATH when present so the suite also
+# works on a read-only venv with vendored deps.
+set -eu
+DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PYTHON=${DSH_CONTRACT_PYTHON:-"$HOME/.qwenpaw/venv/bin/python"}
+if [ ! -x "$PYTHON" ]; then
+  echo "contract: interpreter not found: $PYTHON" >&2
+  echo "set DSH_CONTRACT_PYTHON to a python with the 'acp' + 'pytest' packages" >&2
+  exit 127
+fi
+VENDOR=""
+[ -d "$DIR/.vendor" ] && VENDOR="$DIR/.vendor:"
+exec env "PYTHONPATH=${VENDOR}$DIR:$DIR/spikes:${PYTHONPATH:-}" "$PYTHON" -m pytest "$@"

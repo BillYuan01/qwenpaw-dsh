@@ -173,6 +173,13 @@ cd qwenpaw-dsh
 ```
 
 桥侧的契约测试（s01–s06）见 `dsh-qwenpaw-bridge/TESTING.md`。
+**端到端契约套件已随仓库提供**：`qwenpaw-dsh/tests/contract/`（真实 `dsh` 进程跑 ACP v1）
+
+```sh
+cd qwenpaw-dsh/tests/contract
+./pytest -m contract                                # stock acp profile → 6 passed
+DSH_CONTRACT_PROFILE=qwenpaw ./pytest -m contract    # 桥 profile  → 6 passed
+```
 
 ## 兼容性
 

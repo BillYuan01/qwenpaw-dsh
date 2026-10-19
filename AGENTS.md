@@ -46,7 +46,7 @@ qwenpaw-dsh/
 │  │  ├─ mcp.py              MCP 投影（stdio/http → ACP mcpServers；坏 server 重试在 adapter）
 │  │  └─ images.py           图片内联（后缀→MIME、base64、降级原因）
 │  └─ loaders/               装载层：monkeypatch（2.2.x）/ official（2.3+ 预留）/ direct（独立运行）/ port（接口）
-└─ tests/                    冒烟 + 流式验收 + 单元测试（见「开发约定 · 验证」）
+└─ tests/                    冒烟 + 流式验收 + 单元测试 + 端到端契约套件 tests/contract/（见「开发约定 · 验证」）
 ```
 
 ## 路线图（Roadmap）
@@ -85,5 +85,5 @@ qwenpaw-dsh/
 - **依赖方向**：`core/**` 禁止 import QwenPaw registry/routers 内部符号；仅 `loaders/monkeypatch.py` 允许（2.3 只换 `loaders/official.py`）
 - **fail loud**：装载缺模块/属性直接报错，绝不半生效；`unmount` 精确还原
 - **版本守卫**：monkeypatch 变体 `qwenpaw_version ∈ [2.2.0, 2.3.0)`
-- **验证**：改核心后跑 `qwenpaw-dsh/tests/smoke_adapter.py`；涉审批/档位/装载加跑 `test_approval_port.py`、`test_permission_mode.py`、`test_loader_wiring.py`；流式相关跑 `stream_check.py --profile qwenpaw`（需装好 `acp` SDK 的 Python 环境 + 本机 `dsh` + 模型 key）
+- **验证**：改核心后跑 `qwenpaw-dsh/tests/smoke_adapter.py`；涉审批/档位/装载加跑 `test_approval_port.py`、`test_permission_mode.py`、`test_loader_wiring.py`；流式相关跑 `stream_check.py --profile qwenpaw`（需装好 `acp` SDK 的 Python 环境 + 本机 `dsh` + 模型 key）；**协议行为改动**跑端到端契约套件 `tests/contract/`（`./pytest -m contract`，或 `DSH_CONTRACT_PROFILE=qwenpaw`）——6 项 s01–s06，真实 `dsh` 进程 + ACP v1，约 2 分钟
 - **提交信息写清楚**；许可：Apache-2.0（插件）/ MIT（桥）

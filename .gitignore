@@ -8,6 +8,7 @@ node_modules/
 # Test artifacts
 .bridge-test/
 .contract-test/
+.pytest_cache/
 *.log
 
 # Local notes
