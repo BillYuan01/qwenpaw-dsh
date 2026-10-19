@@ -20,13 +20,13 @@
 - 桥插件：真流式（长答案 93–172 chunks，基线为 1）、权限预设热切换（PID 不变）、模型目录 `_meta`（协议 v1）
 - 契约测试：s01–s06 判据已在两个 profile 上通过（套件暂未收录进本仓库，见"未完成 #6"）
 
-**v0.2（进行中，4/5）**
+**v0.2（已完成，5/5；2026-10-18）**
 
 - ✅ 真流式：`qwenpaw` profile + 桥 → 控制台逐 token；standalone 实测 text_chunks=65（基线 1）
 - ✅ 审批对齐：权限请求 → 控制台审批卡（批准/拒绝/超时三径 live 实测）；`approval_level` → DSH 权限模式（OFF/AUTO/STRICT 三档 live 实测）
 - ✅ Skills 投影：kebab 归一化 + 影子目录 + `--patch` 注入；live 实测技能列表与加载（`snake_case_skill` → `snake-case-skill`）
 - ✅ MCP 投影：`session/new.mcpServers` 注入 + 坏 server"去 MCP 重试一次"；live 实测 MCP 工具调用（`ping` → `PONG`）
-- ⏳ 剩余：图片附件（#4）
+- ✅ 图片附件：内联 base64（探测 `promptCapabilities.image`；不支持/未知后缀/超限优雅降级文本路径）；live 实测发图 → 模型准确识别颜色
 
 ## 实现地图（代码结构）
 
@@ -43,7 +43,8 @@ qwenpaw-dsh/
 │  │  ├─ event_mapper.py     session/update → HarnessEvent（纯函数）
 │  │  ├─ permissions.py      approval_level → DSH 权限模式映射（单一来源）
 │  │  ├─ skills.py           技能投影（kebab 归一化、影子目录、映射与 patch）
-│  │  └─ mcp.py              MCP 投影（stdio/http → ACP mcpServers；坏 server 重试在 adapter）
+│  │  ├─ mcp.py              MCP 投影（stdio/http → ACP mcpServers；坏 server 重试在 adapter）
+│  │  └─ images.py           图片内联（后缀→MIME、base64、降级原因）
 │  └─ loaders/               装载层：monkeypatch（2.2.x）/ official（2.3+ 预留）/ direct（独立运行）/ port（接口）
 └─ tests/                    冒烟 + 流式验收 + 单元测试（见「开发约定 · 验证」）
 ```
@@ -55,7 +56,7 @@ qwenpaw-dsh/
 1. **审批卡片** ✅（2026-10-18）：权限请求 → 宿主审批卡（批准/拒绝/超时三径 live 实测通过）；`approval_level`（STRICT/SMART/AUTO/OFF）→ DSH 权限模式（read-only/workspace-write/danger-full-access）对齐（实现：`qwenpaw_dsh/approvals.py` + `qwenpaw_dsh/core/permissions.py`；缝：`host.py` 的 `ApprovalPort`）。行为备注：workspace-write 下越界操作先被沙箱硬拒绝、由模型提权重试触发卡片；批准为 one-shot（不构成会话级放宽）
 2. **MCP 投影** ✅（2026-10-18）：`session/new.mcpServers` 注入（stdio 命令转绝对路径、http/streamable_http 映射、sse 跳过）+ 坏 server"去 MCP 重试一次"（会话仍可用并告警）；`session/resume` 就地接受 mcpServers；live 实测 MCP 工具调用（`ping` → `PONG`）。实现：`qwenpaw_dsh/core/mcp.py`
 3. **Skills 投影** ✅（2026-10-18）：kebab 归一化 + 影子目录（**重写 frontmatter `name`**——DSH 技能名以 frontmatter 为准，非目录名；资源符号链接、复制兜底）+ `--patch customSkillDirs` 注入 + 快照进池键（变化自动重建）；standalone 14 项与 live 实测通过。实现：`qwenpaw_dsh/core/skills.py`
-4. **图片附件**：内联 base64 图片块（需目标路由声明 image 能力，先探测再发）
+4. **图片附件** ✅（2026-10-18）：内联 base64 图片块（探测 `initialize.promptCapabilities.image`；不支持/未知后缀/超限优雅降级文本路径）；live 实测（发图 → 模型准确识别颜色）。实现：`qwenpaw_dsh/core/images.py`
 5. **切 `qwenpaw` profile** ✅（2026-10-18）：安装桥 profile 后控制台获得真流式；standalone 实测 text_chunks=65（基线 1）
 
 ### v0.3 — 上游化（Upstream）
@@ -73,7 +74,7 @@ qwenpaw-dsh/
 2. **MCP 残余**：策略/allowlist 不可经 ACP 传递（仅工具集）；sse 跳过；HTTP/SSE 未做 live（本机无对应卡）
 3. **Skills 投影残余**：影子资源（符号链接）在沙箱下的读取未做 live 资源验证（夹具无资源）；同一 adapter 并发不同技能集会触发池重建（宿主按 agent 串行，暂无影响）
 4. **`context_usage`**：ACP 有 `usage_update`，宿主事件模型暂无通道（依赖 PR-3）
-5. **图片**：v0.1 附件按文本路径转发；base64 未实现
+5. **图片残余**：探测取自 initialize 的默认路由（会话内切模型未重探）；纯图无文本时首块为空 `text_block`
 6. **契约测试套件**（s01–s06）暂未收录进本仓库
 7. **未验证**：desktop/daemon 形态的插件加载；跨 DSH 版本 resume；SSE/HTTP MCP
 8. **模型目录差异**：QwenPaw 控制台对"不在后端目录中的模型"有归一化行为（选择模型时注意）

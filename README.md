@@ -2,7 +2,7 @@
 
 把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw**，成为一等智能体：出现在智能体列表、可在控制台直接对话、可被其他智能体通过 `chat_with_agent` 调用。全程通过标准 **ACP v1**（stdio）驱动，**不改任何一方的核心代码**。
 
-> **状态**：v0.1 已发布；v0.2 进行中 —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）、✅ Skills 投影、✅ MCP 投影；⏳ 图片投影。
+> **状态**：v0.1 已发布；**v0.2 已完成（5/5）** —— ✅ 真流式、✅ 审批对齐（审批卡 + 权限档位映射）、✅ Skills 投影、✅ MCP 投影、✅ 图片附件。
 > 路线图、未完成事项与开发约定见 [`AGENTS.md`](./AGENTS.md)。
 
 ## 组件
@@ -140,7 +140,15 @@ QwenPaw 配置的 MCP servers（工作区驱动卡）会投影进 DSH 会话（`
 - **坏 server 容错**：DSH 以 `failOnStartupError` 挂载 MCP，任一坏 server 会让 `session/new` 整体失败 → 适配器自动**去掉 MCP 重试一次**，会话保持可用并告警；
 - **会话级**：随 `session/new` / `session/resume` 携带（resume 就地刷新），不参与进程池键。
 
-### 9. 安全模型
+### 9. 图片附件
+
+图片附件在路由支持时以**内联 base64 图片块**发送（`core/images.py`）：
+
+- **能力探测**：取 `initialize` 的 `promptCapabilities.image`——不支持时绝不发块（DSH 会直接报错），降级为文本路径；
+- **编码**：后缀 allow-list → MIME（png/jpeg/gif/webp/bmp），15 MiB 读盘上限；未知后缀/不可读/超限 → 文本路径 + 日志；
+- **发送**：`[text_block, image_block…]`（与 spike s06 一致），多图按附件顺序。
+
+### 10. 安全模型
 
 - 三档沙箱由 DSH 强制执行（`read-only` / `workspace-write` / `danger-full-access`）；
 - 审批默认 **fail-closed**：无人应答 → 超时自动拒绝；拒绝后模型被要求停止而非绕行；
