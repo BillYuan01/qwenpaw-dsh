@@ -1,7 +1,7 @@
 # 项目状态（STATUS.md）
 
 > 一页纸现状。详细开发约定/待办见 [`AGENTS.md`](./AGENTS.md)；逐版变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
-> 更新于 **2026-10-19**（v1.0.0 收官）。
+> 更新于 **2026-10-21**（v1.0.1）。
 
 ## 这是什么
 
@@ -11,8 +11,8 @@
 
 | 项 | 版本 | 说明 |
 |---|---|---|
-| 仓库发布 | **v1.0.0** | 本文件的时点 |
-| `qwenpaw-dsh`（QwenPaw 侧插件） | **1.0.0** | `qwenpaw-dsh/plugin.json` |
+| 仓库发布 | **v1.0.1** | 本文件的时点 |
+| `qwenpaw-dsh`（QwenPaw 侧插件） | **1.0.1** | `qwenpaw-dsh/plugin.json` |
 | `dsh-qwenpaw-bridge`（DSH 侧桥） | 0.1.0 | 独立版本（DSH bundle 插件），随仓库发布一起分发 |
 
 **运行要求**：QwenPaw `2.2.x`（守卫区间 `[2.2.0, 2.3.0)`）· DSH `0.2.0-rc.2`（守卫 `<0.3.0`）· Python `~/.qwenpaw/venv` · 一个可用的模型路由。
@@ -62,6 +62,7 @@ DSH_HOME=~/.dsh <本仓库>/dsh-qwenpaw-bridge/profile/install.sh
 | 5 | 图片能力探测取自 `initialize` 默认路由；会话内切模型不重探 | 边界情形 |
 | 6 | 跨 DSH 版本 resume 未验证（当前锁 0.2.0-rc.2） | 升级 DSH 需重测 |
 | 7 | SSE MCP 不支持（DSH 上游能力缺口） | 只能用 stdio / HTTP |
+| 8 | 第三方 backend 无 agent loop 模式入口（宿主 `usesQwenPawBackend` 门控；DSH 无运行时 loop 模式） | 只能用默认 loop |
 
 完整清单见 `AGENTS.md · 未完成 / 已知限制`。
 

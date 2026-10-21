@@ -260,6 +260,20 @@ class DshAdapter:
             return await connection.new_session(cwd=str(cwd), mcp_servers=[])
 
     # ------------------------------------------------------------------ status
+    @property
+    def capability_unavailable_message(self) -> str | None:
+        """Explain why provider capability discovery is unavailable.
+
+        The host calls this before ``models()``; it must exist on every
+        adapter (the base class declares a method, while shipped providers
+        expose it as a property). Missing it made ``GET /harnesses/<id>/models``
+        raise ``AttributeError`` → 500 → the console fell back to the current
+        model only (v1.0.1 bug).
+        """
+        if not shutil.which(self._binary):
+            return f"'{self._binary}' not found on PATH"
+        return None
+
     async def status(self) -> HarnessProvider:
         resolved = shutil.which(self._binary) or self._binary
         installed = bool(resolved) and Path(resolved).exists()
@@ -326,34 +340,109 @@ class DshAdapter:
             probe_cwd = str(Path.home())
             session_id = await connection.new_session(cwd=probe_cwd)
             try:
-                options = await self._session_config_options(connection, session_id)
-                for option in options:
-                    if str(_get(option, "id")) != "model":
-                        continue
-                    current = str(_get(option, "current_value", "currentValue") or "")
-                    for group in _get(option, "options") or []:
-                        group_name = str(_get(group, "name") or "")
-                        for item in _get(group, "options") or []:
-                            value = str(_get(item, "value") or "")
-                            if not value:
-                                continue
-                            provider, model = _parse_model_value(value, group_name)
-                            model_id = f"{provider}/{model}" if provider else model
-                            value_map[model_id] = value
-                            models.append(
-                                HarnessModel(
-                                    id=model_id,
-                                    name=str(_get(item, "name") or model),
-                                    description=str(_get(item, "description") or ""),
-                                    is_default=bool(value == current),
-                                ),
-                            )
+                # The bridge advertises the authoritative catalog (every model
+                # plus its reasoning efforts) in ``_meta.qwenpaw.models``. Prefer
+                # it; the ACP ``model`` config option only carries provider
+                # groups and no per-model effort list (v1.0.1 bug: efforts were
+                # empty in the console).
+                models, value_map = self._models_from_bridge_meta(connection)
+                if not models:
+                    models, value_map = self._models_from_config_options(connection)
             finally:
                 await connection.close_session(session_id)
         except Exception:  # noqa: BLE001
             log.warning("dsh: model catalog probe failed", exc_info=True)
         self._models_cache = (now, models, value_map)
         return models
+
+    @staticmethod
+    def _models_from_bridge_meta(
+        connection: DshConnection,
+    ) -> tuple[list[HarnessModel], dict[str, str]]:
+        """Read ``_meta.qwenpaw.models`` from the last ``session/new``."""
+        cached = getattr(connection, "_last_new_session_response", None)
+        meta = _get(cached, "field_meta") or {}
+        qwenpaw = _get(meta, "qwenpaw") or {}
+        entries = _get(qwenpaw, "models") or []
+        current = _get(qwenpaw, "current_model") or {}
+        current_provider = str(_get(current, "provider") or "")
+        current_model = str(_get(current, "model") or "")
+        models: list[HarnessModel] = []
+        value_map: dict[str, str] = {}
+        for entry in entries:
+            provider = str(_get(entry, "provider") or "")
+            bare = str(_get(entry, "id") or "")
+            model_id = f"{provider}/{bare}" if provider else bare
+            if not model_id:
+                continue
+            selection = str(_get(entry, "selection_value") or "")
+            if selection:
+                value_map[model_id] = selection
+            efforts = [
+                str(_get(effort, "id"))
+                for effort in (_get(entry, "reasoning_efforts") or [])
+                if _get(effort, "id")
+            ]
+            display_name = str(_get(entry, "name") or bare)
+            provider_label = str(_get(entry, "provider_name") or "")
+            # The console renders only ``HarnessModel.name`` (no provider
+            # column), so surface the provider in the label — otherwise two
+            # providers with similarly named models are indistinguishable.
+            if provider_label:
+                display_name = f"{provider_label} · {display_name}"
+            models.append(
+                HarnessModel(
+                    id=model_id,
+                    name=display_name,
+                    description=str(_get(entry, "description") or ""),
+                    is_default=bool(
+                        _get(entry, "default")
+                        or (
+                            provider == current_provider
+                            and bare == current_model
+                        )
+                    ),
+                    reasoning_efforts=efforts,
+                    default_reasoning_effort=(
+                        str(_get(entry, "default_reasoning_effort"))
+                        if _get(entry, "default_reasoning_effort")
+                        else None
+                    ),
+                ),
+            )
+        return models, value_map
+
+    @classmethod
+    def _models_from_config_options(
+        cls,
+        connection: DshConnection,
+    ) -> tuple[list[HarnessModel], dict[str, str]]:
+        """Fallback: read the ACP ``model`` config option groups."""
+        models: list[HarnessModel] = []
+        value_map: dict[str, str] = {}
+        cached = getattr(connection, "_last_new_session_response", None)
+        for option in list(_get(cached, "config_options", "configOptions") or []):
+            if str(_get(option, "id")) != "model":
+                continue
+            current = str(_get(option, "current_value", "currentValue") or "")
+            for group in _get(option, "options") or []:
+                group_name = str(_get(group, "name") or "")
+                for item in _get(group, "options") or []:
+                    value = str(_get(item, "value") or "")
+                    if not value:
+                        continue
+                    provider, model = _parse_model_value(value, group_name)
+                    model_id = f"{provider}/{model}" if provider else model
+                    value_map[model_id] = value
+                    models.append(
+                        HarnessModel(
+                            id=model_id,
+                            name=str(_get(item, "name") or model),
+                            description=str(_get(item, "description") or ""),
+                            is_default=bool(value == current),
+                        ),
+                    )
+        return models, value_map
 
     async def _session_config_options(
         self,

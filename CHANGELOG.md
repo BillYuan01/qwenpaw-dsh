@@ -2,6 +2,25 @@
 
 版本按语义化版本编号；仓库发布 = `qwenpaw-dsh`（QwenPaw 插件）+ `dsh-qwenpaw-bridge`（DSH 侧桥）的组合。
 
+## v1.0.1 — 2026-10-21
+
+**修复控制台模型选择不全 / 推理档位为空**（1.0.0 回归）。
+
+### 修复
+
+- **`GET /api/harnesses/dsh/models` 500**：`DshAdapter` 缺 `capability_unavailable_message`，宿主取模型目录时抛 `AttributeError`，控制台退回"仅显示当前模型"。现补齐该属性（`dsh` 不在 PATH 时返回可读原因，否则 `None`），接口返回 200。
+- **每模型 `reasoning_efforts` 为空**：`models()` 原先只读 ACP `model` config option（只有 provider 分组，没有档位）。现优先读桥在 `session/new` 的 `field_meta.qwenpaw.models` 中广告的权威目录（含 `reasoning_efforts` / `default_reasoning_effort` / `selection_value`），失败再回落到 config option。
+- **同名模型不可区分**：模型显示名带上 provider 名（`<provider> · <model>`）；控制台只渲染 `name`，没有 provider 列。
+
+### 实测
+
+- `GET /api/harnesses/dsh/models` → HTTP 200，5 个模型，档位齐全：`deepseek-official/deepseek-flash`、`deepseek-v4-pro`（off/low/high/max）；`opencode-go/` 三个（3–5 档）。
+- 115 个单测全过。
+
+### 未包含
+
+- **agent loop 模式选择**：QwenPaw 控制台只对原生 backend 渲染 `LoopModeSelector`（`usesQwenPawBackend` 硬门控），且 DSH 无运行时 loop 模式（`maxParallelToolCalls` 等是 profile 级启动配置）。四条路线（宿主补丁 / 前端插件 / 桥映射 `maxParallelToolCalls` / 不做）待定，留待后续版本。
+
 ## v1.0.0 — 2026-10-19
 
 **首个稳定版**：v0.2 的五项能力之上，补齐**质量与可验证性**（v0.3 线），并明确"只进本仓库"的产出边界。
