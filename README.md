@@ -2,7 +2,7 @@
 
 把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw**，成为一等智能体：出现在智能体列表、可在控制台直接对话、可被其他智能体通过 `chat_with_agent` 调用。全程通过标准 **ACP v1**（stdio）驱动，**不改任何一方的核心代码**。
 
-> **状态**：**v1.0.1（2026-10-21）** —— 能力齐备且经 live 实测：✅ 真流式 · ✅ 审批对齐 · ✅ Skills 投影 · ✅ MCP 投影（stdio + HTTP）· ✅ 图片附件 · ✅ 端到端契约套件（s01–s06）；1.0.1 修复控制台模型目录 500 / 档位为空。
+> **状态**：**v1.0.1（2026-10-21）** —— 能力齐备且经 live 实测：✅ 真流式 · ✅ 审批对齐 · ✅ Skills 投影 · ✅ MCP 投影（stdio + HTTP）· ✅ 图片附件 · ✅ 端到端契约套件（s01–s06）；1.0.1 修复控制台模型目录 500 / 档位为空。DSH 侧桥已拆到独立仓库 [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)。
 > 一页纸现状见 [`STATUS.md`](./STATUS.md)；路线图、未完成事项与开发约定见 [`AGENTS.md`](./AGENTS.md)；逐版变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
 
 ## 组件
@@ -10,7 +10,7 @@
 | 组件 | 目录 | 作用 |
 |---|---|---|
 | **qwenpaw-dsh** | `qwenpaw-dsh/` | QwenPaw 侧插件：把 `dsh` 注册为第三方智能体后端。装载层与适配器核心分离（进程池、会话恢复、模型目录、事件映射、审批卡片、权限档位对齐） |
-| **dsh-qwenpaw-bridge** | `dsh-qwenpaw-bridge/` | DSH 侧桥插件（可选、推荐）：在标准 ACP 面上补上真·逐 token 流式、权限预设热切换、模型目录 `_meta`。不改 DSH core，fail-soft |
+| **dsh-qwenpaw-bridge** | 独立仓库：[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) | DSH 侧桥插件（可选、推荐）：在标准 ACP 面上补上真·逐 token 流式、权限预设热切换、模型目录 `_meta`。不改 DSH core，fail-soft |
 
 ## 快速开始
 
@@ -19,7 +19,10 @@
 npm i -g @deepseek-ai/dsh
 
 # 1) （可选，推荐）安装桥插件 → 控制台里获得真流式
-DSH_HOME=~/.dsh ./dsh-qwenpaw-bridge/profile/install.sh
+#    前置：pnpm；先把 qwenpaw profile 从内置 acp 模板建出来
+DSH_HOME=~/.dsh dsh --profile qwenpaw --from-default-profile acp --dump-config >/dev/null
+DSH_HOME=~/.dsh dsh plugin --profile qwenpaw add /path/to/dsh-qwenpaw-bridge
+#    发布 npm 后可直接：dsh plugin --profile qwenpaw add dsh-qwenpaw-bridge
 #    然后编辑 ~/.dsh/profiles/qwenpaw/cordis.patch.yml，把你的模型 provider 配好
 
 # 2) 安装 QwenPaw 插件（热装载；未生效就重启一次 QwenPaw）
@@ -120,7 +123,7 @@ QwenPaw 侧的四档审批级别，自动映射到 DSH 的沙箱权限模式（`
 - 模型目录 `_meta['qwenpaw']`（协议 v1，详见桥的 README）；
 - **fail-soft**：所需服务缺失时静默退回标准行为，绝不弄坏 DSH。
 
-安装方式：`profile/install.sh` 把桥作为依赖挂进 `~/.dsh/profiles/qwenpaw`（符号链接 + 绝对路径依赖），与 dsh 插件系统同构、可整体卸载。
+安装方式（独立仓库）：先 `dsh --profile qwenpaw --from-default-profile acp --dump-config` 建 profile，再 `dsh plugin --profile qwenpaw add <包或本地目录>`。详见桥仓库的 README。
 
 ### 7. Skills 投影
 
@@ -172,13 +175,14 @@ cd qwenpaw-dsh
 ~/.qwenpaw/venv/bin/python tests/test_loader_wiring.py
 ```
 
-桥侧的契约测试（s01–s06）见 `dsh-qwenpaw-bridge/TESTING.md`。
+桥侧的契约测试与验收见独立仓库 `dsh-qwenpaw-bridge` 的 `TESTING.md`。
 **端到端契约套件已随仓库提供**：`qwenpaw-dsh/tests/contract/`（真实 `dsh` 进程跑 ACP v1）
 
 ```sh
 cd qwenpaw-dsh/tests/contract
 ./pytest -m contract                                # stock acp profile → 6 passed
-DSH_CONTRACT_PROFILE=qwenpaw ./pytest -m contract    # 桥 profile  → 6 passed
+DSH_CONTRACT_BRIDGE=/path/to/dsh-qwenpaw-bridge DSH_CONTRACT_PROFILE=qwenpaw ./pytest -m contract
+                                                    # 桥 profile → 6 passed
 ```
 
 ## 兼容性
@@ -194,7 +198,7 @@ DSH_CONTRACT_PROFILE=qwenpaw ./pytest -m contract    # 桥 profile  → 6 passed
 ## 许可
 
 - `qwenpaw-dsh`：Apache-2.0（与 QwenPaw 一致，见根目录 `LICENSE`）
-- `dsh-qwenpaw-bridge`：MIT（见其 `package.json`）
+- `dsh-qwenpaw-bridge`：MIT（独立仓库 `BillYuan01/dsh-qwenpaw-bridge`）
 
 ---
 

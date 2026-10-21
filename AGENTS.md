@@ -5,10 +5,10 @@
 
 ## 项目一句话
 
-把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw** 成为一等智能体后端，走标准 **ACP v1**（stdio），不改双方核心：
+把 **DeepSeek Harness（`dsh`）** 接入 **QwenPaw** 成为一等智能体后端，走标准 **ACP v1**（stdio），不改双方核心。本仓库只保留 QwenPaw 侧；DSH 侧桥已拆到独立仓库 [`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（由 DSH 维护）：
 
 - `qwenpaw-dsh/` — QwenPaw 插件（装载层/适配器核心分离；进程池、会话恢复、事件映射、模型目录、审批卡片、权限档位对齐）
-- `dsh-qwenpaw-bridge/` — DSH 侧桥插件（真流式、权限预设热切换、模型目录 `_meta`；fail-soft）
+- `dsh-qwenpaw-bridge`（独立仓库）— DSH 侧桥插件（真流式、权限预设热切换、模型目录 `_meta`；fail-soft）
 
 ## 现状（2026-10-18）
 
@@ -85,5 +85,5 @@ qwenpaw-dsh/
 - **依赖方向**：`core/**` 禁止 import QwenPaw registry/routers 内部符号；仅 `loaders/monkeypatch.py` 允许（2.3 只换 `loaders/official.py`）
 - **fail loud**：装载缺模块/属性直接报错，绝不半生效；`unmount` 精确还原
 - **版本守卫**：monkeypatch 变体 `qwenpaw_version ∈ [2.2.0, 2.3.0)`
-- **验证**：改核心后跑 `qwenpaw-dsh/tests/smoke_adapter.py`；涉审批/档位/装载加跑 `test_approval_port.py`、`test_permission_mode.py`、`test_loader_wiring.py`；流式相关跑 `stream_check.py --profile qwenpaw`（需装好 `acp` SDK 的 Python 环境 + 本机 `dsh` + 模型 key）；**协议行为改动**跑端到端契约套件 `tests/contract/`（`./pytest -m contract`，或 `DSH_CONTRACT_PROFILE=qwenpaw`）——6 项 s01–s06，真实 `dsh` 进程 + ACP v1，约 2 分钟
+- **验证**：改核心后跑 `qwenpaw-dsh/tests/smoke_adapter.py`；涉审批/档位/装载加跑 `test_approval_port.py`、`test_permission_mode.py`、`test_loader_wiring.py`；流式相关跑 `stream_check.py --profile qwenpaw`（需装好 `acp` SDK 的 Python 环境 + 本机 `dsh` + 模型 key）；**协议行为改动**跑端到端契约套件 `tests/contract/`（`./pytest -m contract`；桥 profile 用 `DSH_CONTRACT_BRIDGE=/path/to/dsh-qwenpaw-bridge DSH_CONTRACT_PROFILE=qwenpaw`）——6 项 s01–s06，真实 `dsh` 进程 + ACP v1，约 2 分钟
 - **提交信息写清楚**；许可：Apache-2.0（插件）/ MIT（桥）

@@ -1,6 +1,15 @@
 # Changelog
 
-版本按语义化版本编号；仓库发布 = `qwenpaw-dsh`（QwenPaw 插件）+ `dsh-qwenpaw-bridge`（DSH 侧桥）的组合。
+版本按语义化版本编号。本仓库发布 `qwenpaw-dsh`（QwenPaw 插件）；DSH 侧桥 `dsh-qwenpaw-bridge` 已拆到独立仓库发布。
+
+## Unreleased
+
+### 变更
+
+- **DSH 侧桥拆到独立仓库** [`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（由 DSH 维护；MIT）。本仓库删除 `dsh-qwenpaw-bridge/`；安装改为两段式：先 `dsh --profile qwenpaw --from-default-profile acp --dump-config`，再 `dsh plugin --profile qwenpaw add <包或本地目录>`（需要 pnpm）。
+- 桥包名从 `@local/dsh-qwenpaw-bridge` 改为无 scope 的 `dsh-qwenpaw-bridge`；`_meta.bridge` 保持 `dsh-qwenpaw-bridge` 不变。
+- 契约套件支持外部桥：`DSH_CONTRACT_BRIDGE` 或同级 checkout；桥缺失时 `pytest.skip` 并给出明确提示。
+- 修复 shutdown/uninstall hook 不接受 `plugin_id=` 的问题（重载/卸载时抛 `TypeError`）。
 
 ## v1.0.1 — 2026-10-21
 

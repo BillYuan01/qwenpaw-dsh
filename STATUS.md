@@ -13,7 +13,7 @@
 |---|---|---|
 | 仓库发布 | **v1.0.1** | 本文件的时点 |
 | `qwenpaw-dsh`（QwenPaw 侧插件） | **1.0.1** | `qwenpaw-dsh/plugin.json` |
-| `dsh-qwenpaw-bridge`（DSH 侧桥） | 0.1.0 | 独立版本（DSH bundle 插件），随仓库发布一起分发 |
+| `dsh-qwenpaw-bridge`（DSH 侧桥） | 0.1.0 | 独立仓库：[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（独立版本） |
 
 **运行要求**：QwenPaw `2.2.x`（守卫区间 `[2.2.0, 2.3.0)`）· DSH `0.2.0-rc.2`（守卫 `<0.3.0`）· Python `~/.qwenpaw/venv` · 一个可用的模型路由。
 
@@ -46,8 +46,9 @@
 
 ```bash
 qwenpaw plugin install <本仓库>/qwenpaw-dsh --force    # 1) 装 QwenPaw 侧插件
-# 2) 装 DSH 侧桥 profile（真流式/权限预设/模型目录）
-DSH_HOME=~/.dsh <本仓库>/dsh-qwenpaw-bridge/profile/install.sh
+# 2) 装 DSH 侧桥（独立仓库；需要 pnpm）
+dsh --profile qwenpaw --from-default-profile acp --dump-config >/dev/null
+dsh plugin --profile qwenpaw add /path/to/dsh-qwenpaw-bridge
 # 3) 建一个 backend=dsh 的智能体（控制台或 API），backend_settings 指定 profile=qwenpaw
 ```
 
@@ -70,7 +71,7 @@ DSH_HOME=~/.dsh <本仓库>/dsh-qwenpaw-bridge/profile/install.sh
 
 ```
 qwenpaw-dsh/                 QwenPaw 侧插件（装载层 + 适配器核心 + 单测 + 契约套件 + 夹具）
-dsh-qwenpaw-bridge/          DSH 侧桥（bundle 插件 + profile 安装脚本）
+                             DSH 侧桥已拆到独立仓库 BillYuan01/dsh-qwenpaw-bridge
 docs/forms-matrix.md         运行形态 × 插件加载矩阵（门6）
 docs/mcp-http-sse.md         MCP 传输实测（门7）
 docs/dsh-community/          DSH 社区提案存档（含未发布草案）

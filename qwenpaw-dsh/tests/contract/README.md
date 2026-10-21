@@ -27,6 +27,7 @@ tests/contract/
 ```sh
 cd qwenpaw-dsh/tests/contract
 ./pytest -m contract                                  # profile=acp   (stock DSH)
+DSH_CONTRACT_BRIDGE=/path/to/dsh-qwenpaw-bridge \
 DSH_CONTRACT_PROFILE=qwenpaw ./pytest -m contract      # bridge-backed profile
 ```
 
@@ -36,8 +37,10 @@ An optional `.vendor/` directory is prepended to `PYTHONPATH` when present, for
 environments where the venv cannot install pytest.
 
 The `qwenpaw` profile is created on first use from `dsh-base` + `dsh-acp-app` +
-`@local/dsh-qwenpaw-bridge`; the bridge is resolved from the repository layout
-(`<repo>/dsh-qwenpaw-bridge`) or from `DSH_CONTRACT_BRIDGE`.
+the bridge package, whose name is read from the bridge's `package.json`. The
+bridge is resolved from `DSH_CONTRACT_BRIDGE`, a sibling checkout
+(`../dsh-qwenpaw-bridge`), or the old in-repo path; when none exists the suite
+skips with a clear message.
 
 ## Environment variables
 
@@ -47,7 +50,7 @@ The `qwenpaw` profile is created on first use from `dsh-base` + `dsh-acp-app` +
 | `DSH_CONTRACT_SEED` | `user` | `user` copies `~/.dsh/profiles/<profile>`; `fresh` lets DSH materialize the shipped template |
 | `DSH_CONTRACT_HOME` | `.contract-test/home` | isolated `DSH_HOME`; credentials are symlinked, never copied |
 | `DSH_CONTRACT_WORK` | `.contract-test/work` | per-test scratch directory |
-| `DSH_CONTRACT_BRIDGE` | `<repo>/dsh-qwenpaw-bridge` | bridge package used for the `qwenpaw` profile |
+| `DSH_CONTRACT_BRIDGE` | `../dsh-qwenpaw-bridge` → `<repo>/dsh-qwenpaw-bridge` | bridge checkout used for the `qwenpaw` profile |
 | `DSH_CONTRACT_PYTHON` | `~/.qwenpaw/venv/bin/python` | interpreter that runs pytest |
 
 ## Coverage

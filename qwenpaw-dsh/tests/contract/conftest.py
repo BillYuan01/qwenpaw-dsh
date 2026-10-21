@@ -84,6 +84,11 @@ def pytest_configure(config):
 
 def _ensure_qwenpaw_profile(home: Path) -> None:
     """Create the bridge-backed profile when the suite asks for it explicitly."""
+    if not (BRIDGE / "package.json").is_file():
+        pytest.skip(
+            f"bridge checkout not found at {BRIDGE}; set DSH_CONTRACT_BRIDGE "
+            "or check out dsh-qwenpaw-bridge next to this repository",
+        )
     profile_dir = home / "profiles" / "qwenpaw"
     manifest_path = profile_dir / "package.json"
     if manifest_path.exists():
