@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import json
 import os
 import shutil
 import sys
@@ -31,7 +32,36 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 # Repo layout is plugin/ <- repo root <- bridge sibling: …/qwenpaw-dsh/tests/contract/
 _REPO_ROOT = HERE.parents[2] if len(HERE.parents) > 2 else ROOT
-BRIDGE = Path(os.environ.get("DSH_CONTRACT_BRIDGE", str(_REPO_ROOT / "dsh-qwenpaw-bridge")))
+
+
+def _default_bridge() -> Path:
+    """Locate the bridge checkout without assuming a monorepo.
+
+    Order: env (handled by the caller) → sibling of this repo → the old
+    in-repo path. The sibling layout is what the standalone bridge repo uses
+    once it is checked out next to this one.
+    """
+    for candidate in (
+        _REPO_ROOT.parent / "dsh-qwenpaw-bridge",
+        _REPO_ROOT / "dsh-qwenpaw-bridge",
+    ):
+        if (candidate / "package.json").is_file():
+            return candidate
+    return _REPO_ROOT / "dsh-qwenpaw-bridge"
+
+
+BRIDGE = Path(os.environ.get("DSH_CONTRACT_BRIDGE", str(_default_bridge()))).expanduser().resolve()
+
+
+def _bridge_name() -> str:
+    """Read the package name from the bridge checkout (scope may change)."""
+    try:
+        return str(json.loads((BRIDGE / "package.json").read_text(encoding="utf-8"))["name"])
+    except Exception:  # noqa: BLE001
+        return "@local/dsh-qwenpaw-bridge"
+
+
+BRIDGE_NAME = _bridge_name()
 # The spike runners ship next to this file (ported into the plugin repo), so the
 # contract suite is self-contained: `tests/contract/spikes/`.
 SPIKES = HERE / "spikes"
@@ -55,26 +85,40 @@ def pytest_configure(config):
 def _ensure_qwenpaw_profile(home: Path) -> None:
     """Create the bridge-backed profile when the suite asks for it explicitly."""
     profile_dir = home / "profiles" / "qwenpaw"
-    if (profile_dir / "package.json").exists():
-        return
+    manifest_path = profile_dir / "package.json"
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if BRIDGE_NAME in (manifest.get("dependencies") or {}):
+                return
+        except Exception:  # noqa: BLE001
+            pass
     profile_dir.mkdir(parents=True, exist_ok=True)
-    vendor = profile_dir / "node_modules" / "@local"
+    package_parts = BRIDGE_NAME.split("/")
+    vendor = profile_dir / "node_modules"
+    if len(package_parts) > 1:
+        vendor = vendor / package_parts[0]
     vendor.mkdir(parents=True, exist_ok=True)
-    link = vendor / "dsh-qwenpaw-bridge"
-    if not link.exists():
-        link.symlink_to(BRIDGE)
-    (profile_dir / "package.json").write_text(
-        """{
-  "name": "dsh-profile-qwenpaw",
-  "private": true,
-  "dependencies": {"@local/dsh-qwenpaw-bridge": "file:../../../../dsh-qwenpaw-bridge"},
-  "dsh": {"profile": {"bundles": [
-    "@deepseek-ai/dsh-base",
-    "@deepseek-ai/dsh-acp-app",
-    "@local/dsh-qwenpaw-bridge"
-  ]}}
-}
-""",
+    link = profile_dir / "node_modules" / Path(*package_parts)
+    if link.is_symlink() or link.exists():
+        link.unlink()
+    link.symlink_to(BRIDGE)
+    manifest = {
+        "name": "dsh-profile-qwenpaw",
+        "private": True,
+        "dependencies": {BRIDGE_NAME: f"file:{BRIDGE}"},
+        "dsh": {
+            "profile": {
+                "bundles": [
+                    "@deepseek-ai/dsh-base",
+                    "@deepseek-ai/dsh-acp-app",
+                    BRIDGE_NAME,
+                ]
+            }
+        },
+    }
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     source_patch = Path.home() / ".dsh" / "profiles" / "acp" / "cordis.patch.yml"

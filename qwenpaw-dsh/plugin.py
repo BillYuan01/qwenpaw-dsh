@@ -45,7 +45,8 @@ class DshHarnessPlugin:
         report = mount_provider(host)
         log.info("dsh harness mounted via %s: %s", report.strategy, report.to_dict())
 
-    def _shutdown(self) -> None:
+    def _shutdown(self, *args: object, **kwargs: object) -> None:
+        # The loader may call hooks with ``plugin_id=``; accept and ignore it.
         unmount_provider()
 
 
