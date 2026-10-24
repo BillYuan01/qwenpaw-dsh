@@ -203,7 +203,8 @@ async def main() -> int:
         )
         check("no-skills turn works", "PONG" in pong and terminal == "completed", repr(pong[:80]))
         check("no-skills projection has no patch", adapter._skills_plan.patch_path is None)
-        check("no patch file written", not (state_dir / "skills.patch.yml").exists())
+        check("no shared patch file written", not (state_dir / "skills.patch.yml").exists())
+        check("no shared shadow tree written", not (state_dir / "skills_shadow").exists())
         check("no-skills pool key is empty token", adapter._pool_key()[-1] == "")
     finally:
         await adapter.stop()

@@ -198,12 +198,12 @@ class ProjectionTests(unittest.TestCase):
             sorted(e.target for e in projection.entries),
             ["hello-kebab", "snake-case-skill"],
         )
-        # shadow SKILL.md carries the kebab name
-        body = (self.state / "skills_shadow" / "snake-case-skill" / "SKILL.md").read_text()
+        # shadow SKILL.md carries the kebab name (inside this snapshot only)
+        body = (projection.shadow_root / "snake-case-skill" / "SKILL.md").read_text()
         self.assertIn("name: snake-case-skill", body)
         self.assertNotIn("name: snake_case_skill", body)
         # resource is linked and readable
-        resource = self.state / "skills_shadow" / "snake-case-skill" / "ref.txt"
+        resource = projection.shadow_root / "snake-case-skill" / "ref.txt"
         self.assertTrue(resource.exists())
         self.assertEqual(resource.read_text(), "resource")
         # mapping file
@@ -211,14 +211,16 @@ class ProjectionTests(unittest.TestCase):
         self.assertEqual(mapping["snake-case-skill"]["source_name"], "snake_case_skill")
         self.assertEqual(mapping["snake-case-skill"]["suffix"], 0)
         self.assertEqual(sk.target_for(mapping, "snake_case_skill"), "snake-case-skill")
-        # patch file
-        patch = (self.state / "skills.patch.yml").read_text()
+        # patch file points at this snapshot, never a shared path
+        patch = Path(projection.patch_path).read_text()
         self.assertIn("- id: skill-filesystem", patch)
-        self.assertIn(f"      - '{self.state / 'skills_shadow'}'", patch)
+        self.assertIn(f"      - '{projection.shadow_root}'", patch)
+        self.assertTrue(str(projection.patch_path).startswith(str(self.state / "skills_snapshots")))
+        self.assertFalse((self.state / "skills_shadow").exists())
         # command args
         self.assertEqual(
             projection.command_args(),
-            ["--patch", str(self.state / "skills.patch.yml")],
+            ["--patch", str(projection.patch_path)],
         )
 
     def test_idempotent_by_revision(self) -> None:
@@ -252,28 +254,37 @@ class ProjectionTests(unittest.TestCase):
         third = sk.project_skills(self.state, sources)
         self.assertEqual(third.materialized, ("snake-case-skill",))
 
-    def test_removed_skill_cleans_shadow_and_map(self) -> None:
+    def test_removed_skill_leaves_previous_snapshot_untouched(self) -> None:
         write_skill(self.skills, "one_skill")
         write_skill(self.skills, "two_skill")
-        sk.project_skills(
+        first = sk.project_skills(
             self.state,
             self._sources([("one_skill", "r1"), ("two_skill", "r1")]),
         )
+        two = first.shadow_root / "two-skill"
+        self.assertTrue((two / "SKILL.md").is_file())
         projection = sk.project_skills(self.state, self._sources([("one_skill", "r1")]))
-        self.assertEqual(projection.removed, ("two-skill",))
-        self.assertFalse((self.state / "skills_shadow" / "two-skill").exists())
+        # A different input is a new snapshot: no cross-turn deletion.
+        self.assertNotEqual(projection.snapshot, first.snapshot)
+        self.assertEqual(projection.removed, ())
+        self.assertTrue(two.is_dir(), "previous snapshot was modified")
         self.assertNotIn("two-skill", sk.load_map(self.state))
+        self.assertEqual([e.target for e in projection.entries], ["one-skill"])
 
     def test_no_skills_removes_patch_and_writes_empty_map(self) -> None:
         write_skill(self.skills, "one_skill")
-        sk.project_skills(self.state, self._sources([("one_skill", "r1")]))
+        first = sk.project_skills(self.state, self._sources([("one_skill", "r1")]))
+        before = first.shadow_root / "one-skill" / "SKILL.md"
+        self.assertTrue(before.is_file())
         projection = sk.project_skills(self.state, [])
         self.assertFalse(projection.has_skills)
         self.assertIsNone(projection.patch_path)
         self.assertEqual(projection.command_args(), [])
         self.assertFalse((self.state / "skills.patch.yml").exists())
         self.assertEqual(sk.load_map(self.state), {})
-        self.assertFalse((self.state / "skills_shadow" / "one-skill").exists())
+        # The empty turn must not clear another turn's snapshot.
+        self.assertTrue(before.is_file())
+        self.assertFalse((self.state / "skills_shadow").exists())
 
     def test_missing_skill_md_is_skipped(self) -> None:
         directory = self.skills / "broken_skill"
@@ -404,7 +415,9 @@ class AdapterWiringTests(unittest.IsolatedAsyncioTestCase):
             await self.adapter._connection()
             args = captured[-1]["args"]
             self.assertIn("--patch", args)
-            self.assertEqual(args[args.index("--patch") + 1], str(self.state / "skills.patch.yml"))
+            patch = args[args.index("--patch") + 1]
+            self.assertEqual(patch, str(self.adapter._skills_plan.patch_path))
+            self.assertIn("skills_snapshots", patch)
             self.assertEqual(args[:2], ["--profile", "qwenpaw"])
 
     async def test_skill_change_closes_pooled_connections(self) -> None:

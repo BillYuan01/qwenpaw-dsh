@@ -29,6 +29,8 @@ The host definitions are consumed duck-typed (pydantic model or plain ``dict``
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import shutil
 from dataclasses import dataclass
@@ -83,6 +85,57 @@ def _reveal(obj: Any, field_name: str, method_name: str) -> dict[str, str]:
     return {str(key): _secret(value) for key, value in values.items()}
 
 
+# --------------------------------------------------------------------------- fingerprint
+def _canonical_server(server: Any) -> dict[str, Any]:
+    """Stable, secret-bearing description of one projected ACP server.
+
+    The result is only ever fed to :func:`fingerprint` (a SHA-256 over a
+    canonical JSON encoding); it is never logged or persisted.
+    """
+    if isinstance(server, McpServerStdio):
+        return {
+            "kind": "stdio",
+            "name": str(server.name),
+            "command": str(server.command),
+            "args": [str(item) for item in server.args or []],
+            "env": sorted(
+                [[str(item.name), str(item.value)] for item in server.env or []],
+            ),
+        }
+    return {
+        "kind": "http",
+        "name": str(getattr(server, "name", "")),
+        "url": str(getattr(server, "url", "")),
+        "headers": sorted(
+            [
+                [str(item.name).lower(), str(item.value)]
+                for item in getattr(server, "headers", None) or []
+            ],
+        ),
+    }
+
+
+def fingerprint(servers: Iterable[Any]) -> str:
+    """Digest every connection-relevant field, including env/header secrets.
+
+    Servers and header/env entries are sorted, so a pure reordering is not a
+    change. Any credential rotation does change the digest (unlike a
+    secret-free fingerprint). The digest is compared in memory only; it is
+    never written to logs, state files, or reports.
+    """
+    payload = sorted(
+        (_canonical_server(server) for server in servers),
+        key=lambda item: (item["name"], item["kind"]),
+    )
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 # --------------------------------------------------------------------------- result
 @dataclass(frozen=True)
 class MCPProjection:
@@ -90,12 +143,13 @@ class MCPProjection:
 
     ``names`` lists the servers that *mounted* (for the retry warning), while
     ``skipped`` holds ``(server_name, reason)`` pairs. No secret values are
-    retained anywhere in this object.
+    retained anywhere in this object, and ``fingerprint`` is a digest only.
     """
 
     servers: tuple[Any, ...] = ()
     names: tuple[str, ...] = ()
     skipped: tuple[tuple[str, str], ...] = ()
+    fingerprint: str = ""
 
     @property
     def has_servers(self) -> bool:
@@ -201,4 +255,5 @@ def project_mcp_servers(servers: Iterable[Any]) -> MCPProjection:
         servers=tuple(built),
         names=tuple(names),
         skipped=tuple(skipped),
+        fingerprint=fingerprint(built),
     )

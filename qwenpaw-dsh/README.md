@@ -1,6 +1,10 @@
 # qwenpaw-dsh 插件安装目录
 
-这是 QwenPaw 侧插件的安装根目录，包含 `plugin.json`、`plugin.py` 与 `qwenpaw_dsh/` Python 包。当前版本以 `plugin.json` 为准：**1.0.1**。
+这是 QwenPaw 侧插件的安装根目录，包含 `plugin.json`、`plugin.py`、`LICENSE` 与 `qwenpaw_dsh/` Python 包。当前版本以 `plugin.json` 为准：**1.1.0**。
+
+> 本目录是 v1.1.0 发布源码；`../dist/qwenpaw-dsh-1.1.0-plugin.zip` 由同一份源码按白名单可重现构建。历史 `1.0.0` / `1.0.1` ZIP 是各自时点的旧快照，保持原字节，不含本目录的修复。
+>
+> 配套的 DSH 侧桥 [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) 本次同为 **v1.1.0**；两个仓库的版号相同表示配套发布，不表示 DSH 核心版本也变成 1.1.0（兼容范围仍是 `>=0.2.0-rc.2 <0.3.0-0`）。
 
 完整安装、架构、兼容性与排障文档见[仓库 README](https://github.com/BillYuan01/qwenpaw-dsh#readme)，维护约定见[根目录 AGENTS.md](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/AGENTS.md)。这里使用公开链接，便于此目录单独安装后阅读。
 
@@ -26,6 +30,8 @@ qwenpaw plugin install ./qwenpaw-dsh
 
 ## 分发与许可
 
-本目录源码与仓库 `dist/` 中的历史 ZIP 是不同快照；改源码不会自动重打 ZIP。DSH 桥、桥的 web 状态卡与源码辅助工具都不是此插件的内置组件，不会自动安装或启动。
+`dist/qwenpaw-dsh-1.1.0-plugin.zip` 与本目录源码对应，可用 `tools/plugin_package.py check` 逐成员核对。历史 `1.0.0` / `1.0.1` ZIP 是各自时点的快照，**不得重打同名版本**；其中 `1.0.1` 不含本目录的 `LICENSE` 与之后的安全修复。需要重新打包时从仓库根使用 [`tools/plugin_package.py`](../tools/README.md)：显式白名单包含本目录 `LICENSE`（与仓库根逐字节一致），输出到新文件名并运行 `check`。
 
-Apache License 2.0，见[仓库 LICENSE](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/LICENSE)。本项目为社区集成，非厂商官方组件。
+DSH 桥、桥的 web 状态卡与源码辅助工具都不是此插件的内置组件，不会自动安装或启动。
+
+Apache License 2.0，见本目录 [`LICENSE`](LICENSE)（与[仓库根 LICENSE](../LICENSE) 相同）。本项目为社区集成，非厂商官方组件。

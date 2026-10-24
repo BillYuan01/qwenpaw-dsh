@@ -187,14 +187,14 @@ async def main() -> int:
 
     try:
         key_before = adapter._pool_key()
-        adapter._refresh_mcp(
+        projected = adapter._refresh_mcp(
             {"_runtime_capabilities": fake_capabilities([good, bad_server()])}
         )
         check("MCP projection never joins the pool key", adapter._pool_key() == key_before)
         check(
             "mixed projection maps both servers (bad fails at DSH startup)",
-            [server.name for server in adapter._mcp_plan.servers] == ["spike-mcp", "bad-mcp"],
-            repr(adapter._mcp_plan.names),
+            [server.name for server in projected.servers] == ["spike-mcp", "bad-mcp"],
+            repr(projected.names),
         )
 
         # -- live: good MCP server reaches the tool -------------------------
@@ -256,7 +256,10 @@ async def main() -> int:
             adapter, "gate4-none", "Reply with exactly: NOMCP", work, {},
         )
         check("no-MCP turn works", "NOMCP" in answer.upper() and terminal == "completed", repr(answer[:80]))
-        check("no-MCP projection is empty", adapter._mcp_plan.servers == ())
+        check(
+            "no-MCP projection is empty",
+            adapter._refresh_mcp({}).servers == (),
+        )
     finally:
         await adapter.stop()
 

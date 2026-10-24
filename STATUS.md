@@ -1,7 +1,9 @@
 # 项目状态（STATUS.md）
 
 > 一页纸现状。详细开发约定/待办见 [`AGENTS.md`](./AGENTS.md)；逐版变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
-> 更新于 **2026-10-21**（v1.0.1）。
+> 更新于 **2026-10-25**（v1.1.0）。
+
+> **2026-10-25 发布说明**：v1.1.0 是 2026-10-21 之后 G1–G5 安全/生命周期修复的首次统一发布，与桥 `dsh-qwenpaw-bridge` v1.1.0 配套。本版验证为**离线/静态**：12 个白名单文件 252 项单测、打包可重现、ZIP 对最终源码逐成员校验；**没有**重新运行真实 DSH、真实凭据、计费模型，也没有验证 macOS/原生 Windows。下方能力表与 live 数字仍是 2026-10-21 的历史证据，不是 v1.1.0 的复验结果。`dist/qwenpaw-dsh-1.1.0-plugin.zip` 由最终源码生成；历史 `1.0.0`/`1.0.1` ZIP 未改动。
 
 ## 这是什么
 
@@ -11,13 +13,13 @@
 
 | 项 | 版本 | 说明 |
 |---|---|---|
-| 仓库发布 | **v1.0.1** | 本文件的时点 |
-| `qwenpaw-dsh`（QwenPaw 侧插件） | **1.0.1** | `qwenpaw-dsh/plugin.json` |
-| `dsh-qwenpaw-bridge`（DSH 侧桥） | 0.1.0 | 独立仓库：[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（独立版本） |
+| 仓库发布 | **v1.1.0** | 2026-10-25；与桥配套 |
+| `qwenpaw-dsh`（QwenPaw 侧插件） | **1.1.0** | `qwenpaw-dsh/plugin.json` |
+| `dsh-qwenpaw-bridge`（DSH 侧桥） | **1.1.0** | 独立仓库：[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（本次同版号，之后可独立维护） |
 
-**运行要求**：QwenPaw `2.2.x`（守卫区间 `[2.2.0, 2.3.0)`）· DSH `0.2.0-rc.2`（守卫 `<0.3.0`）· Python `~/.qwenpaw/venv` · 一个可用的模型路由。
+**运行要求**：QwenPaw `2.2.x`（守卫区间 `[2.2.0, 2.3.0)`）· DSH `>=0.2.0-rc.2 <0.3.0-0`（历史端到端验证基于 `0.2.0-rc.2`）· Python `~/.qwenpaw/venv` · 一个可用的模型路由。
 
-## 能力（全部经 live 实测）
+## 能力（下表为 2026-10-21 历史 live 证据，不是 v1.1.0 复验）
 
 | 能力 | 状态 | 关键证据 |
 |---|---|---|
@@ -76,6 +78,7 @@ docs/forms-matrix.md         运行形态 × 插件加载矩阵（门6）
 docs/mcp-http-sse.md         MCP 传输实测（门7）
 docs/dsh-community/          DSH 社区提案存档（含未发布草案）
 patches/qwenpaw-upstream/    三条 QwenPaw 侧改进补丁（归档；不对外提交）
+tools/                       白名单打包/校验器与安全测试 runner
 CHANGELOG.md / AGENTS.md     版本记录 / 开发约定与待办
 ```
 

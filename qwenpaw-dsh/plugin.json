@@ -1,7 +1,7 @@
 {
   "id": "qwenpaw-dsh",
   "name": "DeepSeek Harness (DSH) backend",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "hook",
   "description": "Register DeepSeek Harness as a third-party agent backend (loader/core seam; drives `dsh --profile acp` over ACP v1).",
   "author": "BillYuan01",

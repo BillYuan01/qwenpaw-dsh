@@ -4,7 +4,9 @@
 
 这是社区集成，不是 QwenPaw 或 DeepSeek 的官方组件。插件不改写双方安装目录中的核心源码，但会在 QwenPaw 2.2.x 进程内，对后端注册表及其引用做可还原的运行时 monkeypatch。
 
-**当前插件版本：`1.0.1`**，以 [`qwenpaw-dsh/plugin.json`](qwenpaw-dsh/plugin.json) 为准。GitHub 源码可能包含发布包之后的改动；源码更新不等于重新发布了 ZIP 或 npm 包。
+**当前插件版本：`1.1.0`**，以 [`qwenpaw-dsh/plugin.json`](qwenpaw-dsh/plugin.json) 为准。本版与 DSH 侧桥 **`dsh-qwenpaw-bridge` v1.1.0** 配套发布：两个仓库本次使用同一版号，便于对照安装与排障；之后仍可各自独立演进。桥仓库见 [`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（发布后对应 tag 为 `v1.1.0`）。
+
+> **本版是离线验证的发布版，不是“生产已验收”声明。** v1.1.0 的测试入口不启动真实 DSH、不读真实凭据、不调用计费模型；本版没有重新执行历史 live 集成，也没有在 macOS / 原生 Windows 上完成端到端认证。`dist/qwenpaw-dsh-1.1.0-plugin.zip` 由本仓库最终源码按白名单可重现构建，校验方式见 [`dist/README.md`](dist/README.md)。历史 `1.0.0` / `1.0.1` ZIP 保持原字节，不会被重打或覆盖。
 
 ## 两个仓库各负责什么？
 
@@ -41,6 +43,16 @@ DSH 的 acp profile，或安装了桥的 qwenpaw profile
 | WSL | 应按独立 Linux 环境检查，尚无专项端到端验证承诺 |
 
 **不要把辅助工具的限制套到整个桥或本插件上。** 桥仓库的环境同步工具目前在 Linux 验证，macOS 未验证，原生 Windows 暂不支持；它不是本项目必装依赖。
+
+### 本版（v1.1.0）的验证边界
+
+| 类别 | 本版实际做了什么 |
+|---|---|
+| 已执行 | 12 个白名单文件的 **252** 项离线单测（0 skip）；打包器对同一源码两次构建字节一致；生成的 ZIP 与最终源码逐成员比对；成员名/权限/版本/`LICENSE`/卸载回调校验；Python 语法编译、shell 语法、Markdown 本地链接与 `git diff --check`；待发布文本与新增 diff 的有限隐私扫描 |
+| 未执行 | 真实 `dsh` 进程 / ACP live 回合、真实凭据、计费模型、真实插件安装或升级、macOS、原生 Windows、WSL 专项 |
+| 明确行为 | `history()` 返回空列表（ACP 会话可 resume，但不会重建 QwenPaw 历史）；Skills 快照只增不自动 GC；图片只读普通文件且有 15 MiB 上限；MCP 变化会 close + resume，失败只新建并告警 |
+
+历史 live 证据（115 单测、契约 s01–s06、流式/审批/Skills/MCP/图片）记录在对应版本的 CHANGELOG 与 `docs/` 中，代表当时环境，不是 v1.1.0 的复验结果。
 
 ### QwenPaw 运行形态
 
@@ -83,10 +95,12 @@ pnpm --version
 ```sh
 dsh --profile qwenpaw --from-default-profile acp --dump-config >/dev/null
 
-# 二选一：安装 npm 包，或已获取的桥源码 checkout
-dsh plugin --profile qwenpaw add dsh-qwenpaw-bridge
-# dsh plugin --profile qwenpaw add /absolute/path/to/dsh-qwenpaw-bridge
+# 获取与本插件同版（v1.1.0）的桥源码，再从本地目录安装
+git clone --branch v1.1.0 https://github.com/BillYuan01/dsh-qwenpaw-bridge.git
+dsh plugin --profile qwenpaw add /absolute/path/to/dsh-qwenpaw-bridge
 ```
+
+> **不要依赖 `dsh plugin add dsh-qwenpaw-bridge`。** 该包尚未发布到 npm registry（截至 v1.1.0 查询为 404），用裸包名安装会失败。请使用上面的固定 tag + 本地路径方式；若你自行从源码打包，也按桥仓库的 `files` 清单生成，不要把 `tools/`、`diagnostics/`、`status-plugin/` 或测试目录塞进根包。
 
 `qwenpaw` 不是 DSH 内置模板。不要只对一个全新名字执行 `plugin add`：那样可能没有完整 ACP app。已有同名 profile 时，先核对内容，不能用示例覆盖它。
 
@@ -102,7 +116,7 @@ qwenpaw plugin install ./qwenpaw-dsh
 
 **安装目标是内层 `qwenpaw-dsh/`，不是仓库根目录。** 内层才有 `plugin.json` 和 `plugin.py`。遵守所安装 QwenPaw 版本的插件生命周期要求；需要离线安装或重启时，在合适的维护窗口操作，不要假设所有版本都支持热装载。
 
-[`dist/`](dist/README.md) 中的 ZIP 是已有版本的快照，不会随源码文档自动更新。要使用当前源码，请使用上述本地目录安装方式。
+[`dist/`](dist/README.md) 中的 ZIP 是已有版本的快照，不会随源码文档自动更新。要使用当前源码，请使用上述本地目录安装方式。需要重新打包时使用 [`tools/plugin_package.py`](tools/README.md)：它按显式白名单构建到新路径、拒绝覆盖，并可用 `check` 校验版本、LICENSE、成员字节与卸载回调；历史 ZIP 不应被重打。
 
 ### 4. 创建并配置智能体
 
@@ -137,16 +151,24 @@ qwenpaw plugin install ./qwenpaw-dsh
 
 | 能力 | 实现与边界 |
 |---|---|
-| 会话管理 | 持久化 QwenPaw ↔ ACP 会话映射；恢复失败会创建新会话，不保证跨 DSH 版本恢复 |
+| 会话管理 | 持久化 QwenPaw ↔ ACP 会话映射，并按**连接实例**（不只连接池键）校验：DSH 进程重建后先 `session/resume`，失败才新建并给出可见告警。同一 QwenPaw 会话的回合串行，不同会话可在同一连接上并发，各自独立接收事件。 |
 | 流式事件 | 映射文本、思考、工具生命周期与终态；桥从 DSH 内部事件补实时增量，缺能力时回落，不能保证每个字符对应一个 token |
-| 模型选择 | 优先取桥的 `_meta.qwenpaw.models`，失败回退 ACP config options；保留模型选择值与推理档位，目录缓存 600 秒 |
+| 模型选择 | 用户在控制台显式选择的模型/推理档位会**先应用并回读确认**，确认不了就报可见错误、不发送 prompt（不再静默用默认模型继续）。模型选择值来自真实目录（本次会话 `session/new`/`resume` 的 `configOptions` 优先，其次桥 `_meta.qwenpaw.models` / 目录缓存；缺/过期缓存只做一次探测），不会按名字拼 `["provider","model"]`，同名不同 provider 视为歧义而非合并。目录缓存 600 秒；探测失败单独记录，不会当成“模型不存在”。 |
+| 命令 / 会话历史 | 继承宿主 `HarnessAdapter` 契约：`/status` 已实现（`TEXT_DELTA` + `COMPLETED`，只读适配器内存，不启动 DSH、不探测模型、不读凭据）；未声明的命令返回可见 ERROR。`history()` 明确返回空列表——恢复 ACP 会话不等于重建宿主历史，不虚构历史、也不清空持久会话。 |
 | 审批 | `session/request_permission` → QwenPaw 审批卡；优先最小一次性授权，拒绝/超时/端口故障时保守拒绝 |
-| Skills | 名称归一化为 kebab-case；影子目录重写 frontmatter，资源链接或复制；快照变化重建进程连接 |
-| MCP | 投影 stdio 与 HTTP/streamable HTTP；SSE 跳过；会话创建因 MCP 失败时可去 MCP 重试一次，并告警 |
-| 图片 | 按初始化能力发送内联 base64，支持的后缀含 PNG/JPEG/GIF/WebP/BMP；15 MiB 读盘上限，失败回退文本路径 |
+| Skills | 名称归一化为 kebab-case；每个独特输入写入独立快照目录（`skills_snapshots/<sha256>/`），frontmatter 用 PyYAML 节点 span 只改唯一顶层 `name`，资源链接或复制；不同快照/空 Skills 回合不会清理其他回合的资源。快照变化只退役**空闲**连接，正在跑回合的连接等回合结束再换。旧快照不自动 GC，可能积累 |
+| MCP | 投影 stdio 与 HTTP/streamable HTTP；SSE 跳过。会话级指纹覆盖 name/transport/command/args/url/env/header（含凭据，仅内存摘要、不落盘）：变化时先 `session/close` 再带新列表 `session/resume`；禁用/撤回/轮换即生效。新建因 MCP 失败可去 MCP 重试一次并告警；close 失败则退役连接并报错，不向可能仍带旧 MCP 的会话发 prompt。 |
+| 图片 | 按初始化能力发送内联 base64，支持的后缀含 PNG/JPEG/GIF/WebP/BMP；15 MiB 读盘上限；只读普通文件（FIFO/设备/符号链接拒绝），有界短读循环，失败回退文本路径 |
 | 用量 / loop | 当前未提供宿主 `context_usage` 通道，也未实现第三方后端的 loop 模式选择 |
 
 MCP 投影传递工具连接信息，不等于同步宿主全部 allowlist、审批与 Driver 策略。Skills 资源在沙箱中的可读性、会话内切换模型后的图片能力重探，仍有验证或实现缺口。
+
+模型与推理档位的语义：`model` 或 `reasoning_effort` 缺失/`null`/空白表示“未指定”，保持 profile 默认；非空值则必须来自目录并成功回读确认。推理档位只接受**当前实际模型**广告的档位（`off`/`false` 只是普通字符串，只有被广告才合法）。空值不能被用来显式选择 DSH 的“provider 默认档”（`""` 在 ACP 里就是未指定）。写入顺序固定为 model → effort；任一步失败都输出可见 ERROR 且**不发送 prompt**，已成功的 model 切换可能留在该 DSH 会话上，下一轮会重新按显式值应用。目录探测本身会启动 DSH 并新建/关闭一个探测会话（可能加载插件、读取凭据），不是无副作用检查；本次会话响应已带可用目录时不会额外探测。
+
+宿主 `history()` 返回空列表是明确的边界声明：DSH 的 ACP 会话可以 resume，但 QwenPaw 侧的对话记录不会由 DSH 重建。`/status` 只展示适配器内存中的 profile、权限模式、审批策略、binary basename、连接/会话计数与目录缓存状态，不含绝对路径、会话 id、环境变量或凭据摘要。
+
+会话生命周期还有几条使用者可见的边界：MCP 配置变化时若旧会话无法 resume，会新建会话（旧上下文不可用），并在回复开头显示 `[DSH]` 告警；取消回合会发送标准 `session/cancel` 并有限等待，若 DSH 完全不响应，适配器只能退役该连接（停止等待并丢弃迟到帧）——等待超时只约束调用方，**不是对协程的强制终止**，完全吞掉取消的协程仍可能滞留；此时日志会明确写“未确认关闭/未验证终止”，不会声称进程已停。关闭 task 自己抛异常或被取消也不算确认关闭：连接会保持未确认归属、进程树兜底 kill，`stop()` 仍可再次处理，且已结束的关闭 task 不会被说成“仍在运行”。`DshConnection.open` 的失败清理同样有界，且清理失败不会覆盖原始初始化异常。清理本身再被取消时，连接会先同步标记为不可复用并交出关闭任务，不会留下可复用的旧连接或旧会话映射。prompt 被调用方之外的来源取消、或没有 response/`stop_reason` 时，适配器输出可见 ERROR 而不是 COMPLETED；连接被退役/停止时，同连接上所有活跃回合会被显式唤醒并以 ERROR 结束。`reset` 与同一会话的运行回合共用串行锁，不会在 prompt 进行中关闭会话，后续回合也不会复用被 reset 的 ACP 会话 id。
+
 
 ### 权限映射
 
@@ -168,7 +190,7 @@ MCP 投影传递工具连接信息，不等于同步宿主全部 allowlist、审
 | `dsh` 找不到 / profile 不存在 | 服务用户的 `PATH`、绝对 `binary`、服务继承的 `DSH_HOME`、profile 名是否一致 |
 | 只有最终整段输出 | 是否误用默认 `acp`；桥是否真正加载；内部流事件是否可用。不是只看 npm 安装成功 |
 | 模型目录为空或档位不全 | 实际模型路由、桥元数据、目录缓存、DSH 服务注册。不能据此直接断言缺 key 或立刻重写凭据 |
-| 模型目录 HTTP 500 | 插件 1.0.1 已修复缺少 `capability_unavailable_message` 的已知问题；确认服务加载的是新代码，不只是下载了新源码 |
+| 模型目录 HTTP 500 | 插件 1.0.1 起已修复缺少 `capability_unavailable_message` 的已知问题（1.1.0 保留）；确认服务加载的是新代码，不只是下载了新源码 |
 | MCP 工具缺失 | SSE 被跳过、服务启动错误、是否发生去 MCP 重试；详见 [MCP 记录](docs/mcp-http-sse.md) |
 | 想用凭据同步脚本解决所有问题 | 它只补特定 headless 启动环境，不是模型发现根因修复；使用前阅读桥仓库安全说明 |
 
@@ -178,19 +200,17 @@ MCP 投影传递工具连接信息，不等于同步宿主全部 allowlist、审
 
 ### 不调用模型的检查
 
-使用已具备 QwenPaw 与 ACP SDK 的 Python 环境，从仓库根进入插件目录：
+使用已具备 QwenPaw 与 ACP SDK 的 Python 环境，从仓库根运行显式白名单 runner：
 
 ```sh
-cd qwenpaw-dsh
-python -m unittest discover -s tests -p 'test_permission_mode.py'
-python -m unittest discover -s tests -p 'test_approval_port.py'
-python -m unittest discover -s tests -p 'test_loader_wiring.py'
-python -m unittest discover -s tests -p 'test_skills.py'
-python -m unittest discover -s tests -p 'test_mcp.py'
-python -m unittest discover -s tests -p 'test_images.py'
+python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
 ```
 
-装载测试会在**测试进程内**临时挂载并还原注册表，不会安装插件或修改正在运行的服务。依赖缺失与 skip 应如实报告，不能算作通过。
+默认只跑 12 个白名单文件：现有 11 个安全单元文件共 **226** 项，加上打包/runner 的 `test_delivery_tools.py`。每个文件单独执行 `unittest discover -p <file>`，使用一次性临时 `HOME/DSH_HOME/QWENPAW_HOME/QWENPAW_WORKING_DIR/TMPDIR` 和最小环境 allowlist；逐文件/总计报告 tests、failures、errors、skipped。**skip 不算绿**（默认退出 3），缺依赖或文件明确失败，不会自动 pip。
+
+不要绕过 runner 对 `tests/` 做宽泛 discovery：`tests/test_*_projection.py`、`smoke_adapter.py`、`stream_check.py` 与 `tests/contract/` 会驱动真实 DSH，部分会发送 prompt、执行工具或使用真实凭据。`--list` 可查看固定白名单与计数。
+
+装载/审批/生命周期等白名单用例都在测试进程内使用假连接与临时目录，不会安装插件、启动 DSH 或修改正在运行的服务。依赖缺失与 skip 应如实报告，不能算作通过。
 
 ### 必须单独授权的真实集成测试
 
@@ -212,13 +232,16 @@ qwenpaw-dsh/plugin.json          安装清单与插件版本
 qwenpaw-dsh/plugin.py            启停钩子、宿主上下文
 qwenpaw-dsh/qwenpaw_dsh/         provider、审批端口、core 与 loaders
 qwenpaw-dsh/tests/               单元与真实集成测试（注意区分）
+tools/                           白名单打包/校验器与安全测试 runner
 docs/                           历史验证与社区资料
 patches/qwenpaw-upstream/        可选宿主补丁归档，不自动应用
 dist/                           已发布 ZIP 快照，不手工修改
 AGENTS.md                       AI 编码助手与贡献者操作约束
 ```
 
-`STATUS.md` 和历史报告保留其记录时点；当前实现以源码、清单及本 README 的边界说明为准。归档上游补丁不代表已经合并，也不是默认安装要求。对外 issue/PR、GitHub 推送、发布新 ZIP、npm 发版与部署都是独立动作，需维护者授权。两个仓库独立维护，不要求版本号同步；只改文档不必提高运行版本。
+`STATUS.md` 和历史报告保留其记录时点；当前实现以源码、清单及本 README 的边界说明为准。归档上游补丁不代表已经合并，也不是默认安装要求。对外 issue/PR、GitHub 推送、发布新 ZIP、npm 发版与部署都是独立动作，需维护者授权。
+
+两个仓库**本次**使用同一个 `v1.1.0` 版号，表示这是一套配套发布；版号相同不表示 DSH 核心也变成 1.1.0（DSH 兼容范围仍是 `>=0.2.0-rc.2 <0.3.0-0`），也不承诺以后永远同步。之后两仓库可以独立发版；只改文档不必提高运行版本。
 
 ## English overview
 

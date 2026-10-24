@@ -339,28 +339,28 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
     async def test_refresh_does_not_touch_pool_key(self) -> None:
         before = self.adapter._pool_key()
         with mock.patch.object(mc.shutil, "which", return_value="/usr/bin/python3"):
-            self.adapter._refresh_mcp(
+            plan = self.adapter._refresh_mcp(
                 {"_runtime_capabilities": caps(self._good())},
             )
-        self.assertTrue(self.adapter._mcp_plan.has_servers)
-        self.assertEqual(self.adapter._mcp_plan.names, ("good",))
+        self.assertTrue(plan.has_servers)
+        self.assertEqual(plan.names, ("good",))
         self.assertEqual(self.adapter._pool_key(), before)
 
     async def test_no_definitions_is_empty_list(self) -> None:
-        self.adapter._refresh_mcp({})
-        self.assertEqual(self.adapter._mcp_plan.servers, ())
+        plan = self.adapter._refresh_mcp({})
+        self.assertEqual(plan.servers, ())
         connection = _FakeConnection()
-        await self.adapter._ensure_session(connection, "qp-none", self.cwd)
+        await self.adapter._ensure_session(connection, "qp-none", self.cwd, plan)
         self.assertEqual(connection.calls, [("new", str(self.cwd), [])])
 
     async def test_new_session_receives_projected_servers(self) -> None:
         with mock.patch.object(mc.shutil, "which", return_value="/usr/bin/python3"):
-            self.adapter._refresh_mcp(
+            plan = self.adapter._refresh_mcp(
                 {"_runtime_capabilities": caps(self._good(name="a"), self._good(name="b"))},
             )
         connection = _FakeConnection()
-        session = await self.adapter._ensure_session(connection, "qp-1", self.cwd)
-        self.assertEqual(session, "acp-new")
+        session = await self.adapter._ensure_session(connection, "qp-1", self.cwd, plan)
+        self.assertEqual(session.acp_session_id, "acp-new")
         (kind, cwd, servers), = connection.calls
         self.assertEqual(kind, "new")
         self.assertEqual([s.name for s in servers], ["a", "b"])
@@ -368,13 +368,13 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_resume_session_receives_projected_servers(self) -> None:
         with mock.patch.object(mc.shutil, "which", return_value="/usr/bin/python3"):
-            self.adapter._refresh_mcp(
+            plan = self.adapter._refresh_mcp(
                 {"_runtime_capabilities": caps(self._good())},
             )
         self.adapter._records["qp-2"] = {"acpSessionId": "old-acp"}
         connection = _FakeConnection()
-        session = await self.adapter._ensure_session(connection, "qp-2", self.cwd)
-        self.assertEqual(session, "old-acp")
+        session = await self.adapter._ensure_session(connection, "qp-2", self.cwd, plan)
+        self.assertEqual(session.acp_session_id, "old-acp")
         (kind, _cwd, acp_id, servers), = connection.calls
         self.assertEqual(kind, "resume")
         self.assertEqual(acp_id, "old-acp")
@@ -382,7 +382,7 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_bad_server_retries_without_mcp(self) -> None:
         with mock.patch.object(mc.shutil, "which", return_value="/usr/bin/python3"):
-            self.adapter._refresh_mcp(
+            plan = self.adapter._refresh_mcp(
                 {"_runtime_capabilities": caps(self._good(name="good"), self._good(name="bad"))},
             )
         connection = _FakeConnection()
@@ -394,8 +394,8 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
 
         connection._new = new_session
         with self.assertLogs("qwenpaw.dsh", level="WARNING") as logs:
-            session = await self.adapter._ensure_session(connection, "qp-3", self.cwd)
-        self.assertEqual(session, "acp-fallback")
+            session = await self.adapter._ensure_session(connection, "qp-3", self.cwd, plan)
+        self.assertEqual(session.acp_session_id, "acp-fallback")
         self.assertEqual(
             connection.calls,
             [
@@ -411,7 +411,7 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_bad_server_retry_also_failing_propagates(self) -> None:
         with mock.patch.object(mc.shutil, "which", return_value="/usr/bin/python3"):
-            self.adapter._refresh_mcp(
+            plan = self.adapter._refresh_mcp(
                 {"_runtime_capabilities": caps(self._good())},
             )
         connection = _FakeConnection()
@@ -422,12 +422,12 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
         connection._new = new_session
         with self.assertLogs("qwenpaw.dsh", level="WARNING"):
             with self.assertRaises(RuntimeError):
-                await self.adapter._ensure_session(connection, "qp-4", self.cwd)
+                await self.adapter._ensure_session(connection, "qp-4", self.cwd, plan)
         self.assertEqual(len(connection.calls), 2)
         self.assertEqual(connection.calls[1][2], [])
 
     async def test_no_mcp_failure_is_not_retried(self) -> None:
-        self.adapter._refresh_mcp({})
+        plan = self.adapter._refresh_mcp({})
         connection = _FakeConnection()
 
         async def new_session(cwd, mcp_servers):
@@ -435,17 +435,30 @@ class AdapterMCPTests(unittest.IsolatedAsyncioTestCase):
 
         connection._new = new_session
         with self.assertRaises(RuntimeError):
-            await self.adapter._ensure_session(connection, "qp-5", self.cwd)
+            await self.adapter._ensure_session(connection, "qp-5", self.cwd, plan)
         self.assertEqual(len(connection.calls), 1)
 
 
 class _FakeClient:
     def __init__(self) -> None:
-        self.queue: asyncio.Queue = asyncio.Queue()
         self.contexts: list[tuple] = []
+        self._queues: dict[str, asyncio.Queue] = {}
+
+    def attach_session(self, session_id) -> asyncio.Queue:
+        queue: asyncio.Queue = asyncio.Queue()
+        self._queues[str(session_id)] = queue
+        return queue
+
+    def detach_session(self, session_id, queue=None) -> None:
+        key = str(session_id)
+        if queue is None or self._queues.get(key) is queue:
+            self._queues.pop(key, None)
 
     def set_approval_context(self, session_id, context) -> None:
         self.contexts.append((session_id, context))
+
+    def clear_approval_context(self, session_id) -> None:
+        self._queues.pop(str(session_id), None)
 
 
 class _TurnConnection(_FakeConnection):
