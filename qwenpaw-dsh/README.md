@@ -1,37 +1,31 @@
-# qwenpaw-dsh (v1.0.1)
+# qwenpaw-dsh 插件安装目录
 
-QwenPaw plugin that registers **DeepSeek Harness** as a third-party agent
-backend. The provider core (`qwenpaw_dsh/`) is host-agnostic and driven through
-a loader seam; the 2.2.x loader monkey-patches the harness registry, the 2.3+
-loader feature-detects an official entry point (QwenPaw 2.3+).
+这是 QwenPaw 侧插件的安装根目录，包含 `plugin.json`、`plugin.py` 与 `qwenpaw_dsh/` Python 包。当前版本以 `plugin.json` 为准：**1.0.1**。
 
-The DSH-side bridge lives in its own repository:
-[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)
-(MIT; true streaming, hot-switchable permission presets, model catalog `_meta`).
+完整安装、架构、兼容性与排障文档见[仓库 README](https://github.com/BillYuan01/qwenpaw-dsh#readme)，维护约定见[根目录 AGENTS.md](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/AGENTS.md)。这里使用公开链接，便于此目录单独安装后阅读。
 
-## Status
+## 安装
 
-- ✅ `status` / `models` (bridge `_meta` catalog, per-model reasoning efforts) /
-  `run_turn` (text + tool lifecycle + terminal mapping)
-- ✅ Process pool keyed by `(binary, profile, permission_mode, approval_policy)`
-- ✅ Session mapping with cross-restart `session/resume` (`dsh_sessions.json`)
-- ✅ Approval cards: `session/request_permission` → QwenPaw approval service
-  (`approvals.py`; approve/deny/timeout; narrowest one-shot grants; fail-closed fallbacks)
-- ✅ Permission-mode alignment: `approval_level` (OFF/AUTO/SMART/STRICT) → DSH mode
-  (`core/permissions.py`, via `DSH_PERMISSION_MODE`, pool-key aware)
-- ✅ True streaming with the `qwenpaw` profile (+ bridge)
-- ✅ Skills projection, MCP projection (stdio + HTTP), inline image attachments
-- ✅ Tests: `tests/smoke_adapter.py`, `tests/stream_check.py`,
-  `tests/test_permission_mode.py`, `tests/test_approval_port.py`,
-  `tests/test_loader_wiring.py`
-- ✅ 端到端契约套件 s01–s06: `tests/contract/`（真实 `dsh` + ACP v1；两种 profile 均 6 passed）
+从仓库根目录执行：
 
-## Install
-
-```bash
-qwenpaw plugin install ./qwenpaw-dsh     # hot-loads; restart QwenPaw if it does not appear
+```sh
+qwenpaw plugin install ./qwenpaw-dsh
 ```
 
-For true streaming, install the bridge into a `qwenpaw` DSH profile (see the
-bridge repository's README). Uninstall restores the patched registry symbols
-exactly (loader `unmount`).
+从其他目录安装时，使用本目录的实际路径。安装执行插件代码并修改 QwenPaw 插件目录，应遵守所用宿主版本的生命周期要求；先确认目标环境，必要时在维护窗口重启。
+
+## 使用前必须确认
+
+- 当前清单和 monkeypatch 装载器支持 QwenPaw `>=2.2.0, <2.3.0`。未来 official loader 的预留代码不代表已支持 2.3+。
+- 服务环境能找到兼容的 DSH CLI、ACP SDK、模型路由与凭据；QwenPaw 已安装不等于 DSH 模型已配置。
+- 默认 DSH profile 是 `acp`。要获得桥提供的实时增量、模型目录和权限预设，先在 DSH 安装独立的 [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，再明确设置 `backend_settings.profile` 为 `qwenpaw`。
+- Linux 有集成验证；macOS 和原生 Windows 尚未完成本项目端到端认证。不要把未验证说成已支持或绝对不可运行。
+- 审批端口异常、拒绝和超时按拒绝处理；一次批准不构成永久授权。显式 `permission_mode` 会覆盖 `approval_level` 映射。
+- MCP 支持 stdio 与 HTTP 投影，SSE 跳过；图片能力、Skills 资源和恢复行为仍有边界，见完整文档。
+- `tests/` 混合单元与真实集成脚本。后者可能读取凭据、调用计费模型或执行工具，不要直接盲跑整个目录。
+
+## 分发与许可
+
+本目录源码与仓库 `dist/` 中的历史 ZIP 是不同快照；改源码不会自动重打 ZIP。DSH 桥、桥的 web 状态卡与源码辅助工具都不是此插件的内置组件，不会自动安装或启动。
+
+Apache License 2.0，见[仓库 LICENSE](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/LICENSE)。本项目为社区集成，非厂商官方组件。
