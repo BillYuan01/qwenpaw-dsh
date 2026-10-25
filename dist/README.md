@@ -4,7 +4,8 @@
 
 | 文件 | 大小 | SHA256 | 说明 |
 |---|---:|---|---|
-| `qwenpaw-dsh-1.1.0-plugin.zip` | 203101 | `527ea24b2219f8018a3da80e10af6f56c7933f4e428eea761a50ae624628971d` | 2026-10-25 的 v1.1.0 快照；与当前源码逐成员一致 |
+| `qwenpaw-dsh-1.1.1-plugin.zip` | 207452 | `6a7bffb1f58adcdd8b41cdbe83d4d4254454e29570fe9638cafbaa1b7a0af5af` | 2026-10-25 工具映射补丁，与本版源码逐成员一致 |
+| `qwenpaw-dsh-1.1.0-plugin.zip` | 203101 | `527ea24b2219f8018a3da80e10af6f56c7933f4e428eea761a50ae624628971d` | 2026-10-25 的 v1.1.0 历史快照 |
 | `qwenpaw-dsh-1.0.1-plugin.zip` | 38873 | `2689d89a9cd62d748582185c07ac2654021fe9c1cced57d5c64ace0877bf4a2d` | 2026-10-21 发布的 v1.0.1 快照 |
 | `qwenpaw-dsh-1.0.0-plugin.zip` | 37965 | `8ef56414fa53930cedec76ee890c1c95182f767651797111145013bb8da38c92` | v1.0.0 历史资产 |
 
@@ -25,7 +26,7 @@ python ../tools/plugin_package.py check \
 
 ```sh
 python ../tools/plugin_package.py check \
-  --zip qwenpaw-dsh-1.1.0-plugin.zip --source .. --expected-version 1.1.0
+  --zip qwenpaw-dsh-1.1.1-plugin.zip --source .. --expected-version 1.1.1
 ```
 
 包内 21 个成员与源码逐字节一致，固定 `1980-01-01` 时间戳、`0644` 权限、无目录条目。同一源码重复构建应得到完全相同的 SHA256。
