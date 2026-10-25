@@ -1,37 +1,39 @@
+English | [简体中文](README.zh-CN.md)
+
 # qwenpaw-dsh
 
-在 QwenPaw 里使用 DeepSeek Harness（DSH）。安装后，可以创建 DSH 智能体，在控制台对话，或让其他智能体调用它。
+Use DeepSeek Harness (DSH) in QwenPaw. Create a DSH agent, chat with it in the console, or call it from another agent.
 
-插件通过 ACP v1 驱动 DSH，负责会话、模型选择、工具事件和审批的衔接。这是社区项目，不是两家厂商的官方组件。
+The plugin drives DSH through ACP v1, connecting sessions, model selection, tool events, and approvals. This is a community project, not an official component from either vendor.
 
-当前版本：**1.1.1**。推荐搭配 [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，不要求两个组件同版号。
+Current version: **1.1.1**. Recommended bridge: [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge). The two components do not need matching version numbers.
 
-## 能做什么
+## Features
 
-- 流式显示回答、思考和工具执行结果；实时增量需要安装 DSH 桥。
-- 选择模型和推理强度，并在发送消息前确认设置生效。
-- 恢复 DSH 会话，让同一连接上的不同会话分别接收自己的消息。
-- 将 QwenPaw 的审批请求、Skills、stdio / HTTP MCP 和图片附件交给 DSH 处理。
+- Stream responses, reasoning, and tool results. Real-time deltas require the DSH bridge.
+- Select a model and reasoning effort, with settings confirmed before sending a prompt.
+- Resume DSH sessions and route each session's messages separately on a shared connection.
+- Project QwenPaw approvals, Skills, stdio / HTTP MCP servers, and image attachments into DSH.
 
 ```text
-QwenPaw → qwenpaw-dsh（本插件）→ ACP → DSH + dsh-qwenpaw-bridge → 模型
+QwenPaw → qwenpaw-dsh (this plugin) → ACP → DSH + dsh-qwenpaw-bridge → model
 ```
 
-两个组件安装在不同位置：本插件装进 QwenPaw；桥装进 DSH 的 profile。只安装其中一个，不会自动装好另一端。
+The components install separately: this plugin goes into QwenPaw; the bridge goes into a DSH profile. Installing one does not install the other.
 
-## 环境要求
+## Requirements
 
-- QwenPaw `>=2.2.0, <2.3.0`，以及其 Python 环境中的官方 ACP SDK（`acp`）。
-- DSH `>=0.2.0-rc.2 <0.3.0-0`，已经配置好模型和凭据。
-- Node.js >=22；安装 DSH 桥还需要 pnpm。
+- QwenPaw `>=2.2.0, <2.3.0`, with the official ACP SDK (`acp`) in its Python environment.
+- DSH `>=0.2.0-rc.2 <0.3.0-0`, with model routing and credentials already configured.
+- Node.js >=22; the DSH bridge also requires pnpm.
 
-目前在 Linux 上验证。macOS、原生 Windows 和 WSL 尚未做专项端到端测试。`app` 的插件加载已验证；`desktop` 只验证过后端加载，`qwenpaw task` 不经过插件加载流程。详见[运行形态记录](docs/forms-matrix.md)。
+Verified on Linux. Dedicated end-to-end tests have not been run on macOS, native Windows, or WSL. Plugin loading is verified for `app`; only backend loading is verified for `desktop`. `qwenpaw task` bypasses plugin loading. See the [runtime forms record](docs/forms-matrix.md) (historical, in Chinese).
 
-## 安装
+## Installation
 
-以下以一套新安装为例。已有同名 profile 或插件时，先保留现有配置，再进行更新。
+The steps below assume a fresh installation. If a profile or plugin with the same name already exists, preserve its configuration before updating.
 
-### 1. 准备 DSH 桥
+### 1. Set up the DSH bridge
 
 ```sh
 git clone --branch v1.1.0 https://github.com/BillYuan01/dsh-qwenpaw-bridge.git
@@ -39,11 +41,11 @@ dsh --profile qwenpaw --from-default-profile acp --dump-config >/dev/null
 dsh plugin --profile qwenpaw add /absolute/path/to/dsh-qwenpaw-bridge
 ```
 
-把最后一行换成刚克隆目录的绝对路径。`qwenpaw` profile 必须先从内置 `acp` 模板创建，不能只对新名字执行 `plugin add`。
+Replace the path on the last line with the absolute path to your clone. Create the `qwenpaw` profile from the built-in `acp` template first; running `plugin add` against a new profile name alone is not enough.
 
-桥尚未发布到 npm，请使用上面的本地路径安装。然后按[桥的安装说明](https://github.com/BillYuan01/dsh-qwenpaw-bridge#readme)配置模型路由；合并配置，不要覆盖已有的 `cordis.patch.yml`。
+The bridge is not published to npm; install it from a local path as shown above. Then follow the [bridge installation guide](https://github.com/BillYuan01/dsh-qwenpaw-bridge#readme) to configure model routing. Merge settings into the existing `cordis.patch.yml`; do not overwrite it.
 
-### 2. 安装 QwenPaw 插件
+### 2. Install the QwenPaw plugin
 
 ```sh
 git clone --branch v1.1.1 https://github.com/BillYuan01/qwenpaw-dsh.git
@@ -51,11 +53,11 @@ cd qwenpaw-dsh
 qwenpaw plugin install ./qwenpaw-dsh
 ```
 
-安装目标是仓库内层的 `qwenpaw-dsh/`，那里才有 `plugin.json`。也可以从 [Releases](https://github.com/BillYuan01/qwenpaw-dsh/releases) 下载 ZIP，解压后安装该目录。更新现有插件可使用宿主支持的 `--force` 流程；热加载会关闭旧插件持有的连接，应避开正在运行的回合。
+Install the inner `qwenpaw-dsh/` directory, which contains `plugin.json`. Alternatively, download a ZIP from [Releases](https://github.com/BillYuan01/qwenpaw-dsh/releases), extract it, and install that directory. To update an existing plugin, use the host's supported `--force` workflow. Hot reload closes connections owned by the old plugin, so avoid updating during active turns.
 
-### 3. 创建智能体
+### 3. Create an agent
 
-在控制台创建后端为 **DeepSeek Harness** 的智能体，设置 profile 为 `qwenpaw`。相关配置片段如下，不是完整配置文件：
+In the console, create an agent with the **DeepSeek Harness** backend and set its profile to `qwenpaw`. This is a configuration fragment, not a complete configuration file:
 
 ```json
 {
@@ -67,46 +69,46 @@ qwenpaw plugin install ./qwenpaw-dsh
 }
 ```
 
-`binary` 可省略，插件会从 QwenPaw 服务的 `PATH` 查找。服务继承的 `DSH_HOME` 要与配置 profile 时一致。
+`binary` is optional; the plugin looks for DSH on the QwenPaw service's `PATH`. The service must inherit the same `DSH_HOME` used when configuring the profile.
 
-**默认 profile 是 `acp`，不是 `qwenpaw`。** 装好桥后也需要明确选择 `qwenpaw`，否则不会使用桥的增强功能。
+**The default profile is `acp`, not `qwenpaw`.** Even after installing the bridge, explicitly select `qwenpaw` to use its enhancements.
 
-## 权限
+## Permissions
 
-| QwenPaw 审批级别 | DSH 模式 |
+| QwenPaw approval level | DSH mode |
 |---|---|
 | `STRICT` | `read-only` |
 | `SMART` / `AUTO` | `workspace-write` |
 | `OFF` | `danger-full-access` |
 
-显式设置的 `backend_settings.permission_mode` 优先于审批级别。审批端口故障、拒绝和超时都按拒绝处理，一次批准不代表永久放行。
+An explicit `backend_settings.permission_mode` overrides the approval level. Approval-port failures, denials, and timeouts are treated as denial. A single approval does not grant permanent access.
 
-`read-only` 限制修改，**不是文件读取白名单**。MCP 连接投影也不等于完整传递 QwenPaw 的 Driver 策略。不要把测试目录或一条提示词当作硬隔离。
+`read-only` restricts changes; it is **not a file-read allowlist**. Projecting MCP connections does not fully propagate QwenPaw Driver policies either. A test directory or a prompt is not a hard isolation boundary.
 
-## 常见问题
+## Troubleshooting
 
-**控制台没有 DSH 后端。** 检查插件是否装到实际使用的 QwenPaw 工作目录、宿主是否为支持的 2.2.x，以及加载日志是否报错。
+**The DSH backend is missing from the console.** Check that the plugin is installed in the working directory used by the running QwenPaw instance, that the host is a supported 2.2.x version, and that loading logs show no errors.
 
-**终端能运行 DSH，服务却找不到。** 服务的 `PATH` 可能不同，填写 `binary` 的绝对路径，并检查服务继承的 `DSH_HOME`。
+**DSH works in a terminal but the service cannot find it.** The service may have a different `PATH`. Set `binary` to an absolute path and check the service's inherited `DSH_HOME`.
 
-**回答只在最后整段出现。** 检查智能体是否选择 `qwenpaw` profile，以及桥是否真正加载。
+**The response appears all at once at the end.** Check that the agent uses the `qwenpaw` profile and that the bridge is actually loaded.
 
-**模型或推理档位不对。** 核对当前智能体使用的 profile、模型路由和目录缓存。查询模型 API 时应选择 DSH 智能体的上下文；从原生 QwenPaw 智能体查询，可能走默认 `acp` profile。模型数量取决于配置，不是固定值。
+**The model or reasoning effort is wrong.** Check the agent's profile, model routing, and catalog cache. Query the model API in the DSH agent's context; querying from a native QwenPaw agent may use the default `acp` profile. The model count depends on configuration and is not fixed.
 
-**恢复会话后，为什么没有重建聊天记录？** ACP 会话恢复与 QwenPaw 历史回放是两回事。插件的 `history()` 目前返回空列表。
+**Why isn't chat history rebuilt after resuming a session?** ACP session resumption and QwenPaw history replay are separate features. The plugin's `history()` currently returns an empty list.
 
-**还有哪些限制？** SSE MCP、上下文用量显示和第三方后端 loop 模式选择尚不支持；图片能力在初始化时探测，切换模型后不重探。Skills 快照不会自动清理，源资源仍通过链接读取。更多实现说明见[架构文档](docs/architecture.md)。
+**What else is limited?** SSE MCP, context-usage display, and loop-mode selection for third-party backends are not supported. Image capability is detected at initialization, not after a model switch. Skills snapshots are not cleaned up automatically, and source resources remain linked. See the [architecture guide](docs/architecture.md).
 
-## 测试与开发
+## Testing and development
 
 ```sh
 python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
 ```
 
-这是不调用模型的白名单测试入口，目前共 272 项。不要直接对整个 `tests/` 目录做 pytest 收集，其中包含会启动真实 DSH、读取凭据或调用模型的脚本。
+This allowlisted test entry point runs 272 tests without model calls. Do not run pytest collection over all of `tests/`: it includes scripts that start real DSH processes, read credentials, or call models.
 
-Linux 上已实测真实回答、流式、双会话并发、取消后继续使用和跨进程恢复；1.1.1 还验证了读取工具的完成事件直接带回文件文本。这些是特定环境下的测试，不是全平台保证。详见[验证记录](docs/verification.md)、[开发说明](docs/development.md)和 [AGENTS.md](AGENTS.md)。
+Live Linux tests have covered responses, streaming, two concurrent sessions, reuse after cancellation, and cross-process resumption. Version 1.1.1 also verified that a read tool's completion event directly carries file text. These are results from a specific environment, not a cross-platform guarantee. See the [verification record](docs/verification.md), [development guide](docs/development.md), and [AGENTS.md](AGENTS.md).
 
-## 许可证
+## License
 
-[Apache License 2.0](LICENSE)。DSH 桥使用其独立仓库中的 MIT 许可证。
+[Apache License 2.0](LICENSE). The DSH bridge uses the MIT license in its separate repository.

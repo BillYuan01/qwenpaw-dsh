@@ -1,37 +1,37 @@
-# qwenpaw-dsh 插件安装目录
+# qwenpaw-dsh plugin directory
 
-这是 QwenPaw 侧插件的安装根目录，包含 `plugin.json`、`plugin.py`、`LICENSE` 与 `qwenpaw_dsh/`。当前版本：**1.1.1**。本补丁仅修复嵌套工具结果文本映射，保持权限和其他运行行为不变。
+This is the installable root of the QwenPaw-side plugin. It contains `plugin.json`, `plugin.py`, `LICENSE`, and `qwenpaw_dsh/`. Current version: **1.1.1**. This patch fixes nested tool-result text mapping without changing permissions or other runtime behavior.
 
-> 1.1.1 已在 Linux 上完成真实读取测试：工具完成事件直接带回文件文本。测试范围见仓库的[验证记录](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/docs/verification.md)，不代表所有环境已验证。发布 ZIP 保留该 tag 的文件；main 的后续文档更新不会重打旧包。
+> Version 1.1.1 passed a live file-read test on Linux: the tool completion event directly carried file text. See the repository's [verification record](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/docs/verification.md) for scope; other environments are not thereby verified. A release ZIP preserves its tag's files. Later documentation updates on main do not rebuild old packages.
 >
-> 配套的 DSH 侧桥 [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) 保持 **v1.1.0**（本轮未改）；1.1.1 仍与该桥配套兼容。桥版号不表示 DSH 核心版本变成 1.1.0（兼容范围仍是 `>=0.2.0-rc.2 <0.3.0-0`）。
+> The companion DSH-side bridge, [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge), remains at **v1.1.0** and is compatible with plugin 1.1.1. The bridge version does not mean DSH core is version 1.1.0; the supported DSH range remains `>=0.2.0-rc.2 <0.3.0-0`.
 
-完整安装、架构、兼容性与排障文档见[仓库 README](https://github.com/BillYuan01/qwenpaw-dsh#readme)，维护约定见[根目录 AGENTS.md](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/AGENTS.md)。这里使用公开链接，便于此目录单独安装后阅读。
+For installation, architecture, compatibility, and troubleshooting, see the [repository README](https://github.com/BillYuan01/qwenpaw-dsh#readme). Maintenance rules are in the [root AGENTS.md](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/AGENTS.md). Public links remain usable when this directory is installed separately.
 
-## 安装
+## Installation
 
-从仓库根目录执行：
+From the repository root:
 
 ```sh
 qwenpaw plugin install ./qwenpaw-dsh
 ```
 
-从其他目录安装时，使用本目录的实际路径。安装执行插件代码并修改 QwenPaw 插件目录，应遵守所用宿主版本的生命周期要求；先确认目标环境，必要时在维护窗口重启。
+From another directory, use the actual path to this directory. Installation executes plugin code and modifies the QwenPaw plugin directory. Follow the host version's lifecycle requirements, confirm the target environment first, and restart in a maintenance window if needed.
 
-## 使用前必须确认
+## Before use
 
-- 当前清单和 monkeypatch 装载器支持 QwenPaw `>=2.2.0, <2.3.0`。未来 official loader 的预留代码不代表已支持 2.3+。
-- 服务环境能找到兼容的 DSH CLI、ACP SDK、模型路由与凭据；QwenPaw 已安装不等于 DSH 模型已配置。
-- 默认 DSH profile 是 `acp`。要获得桥提供的实时增量、模型目录和权限预设，先在 DSH 安装独立的 [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，再明确设置 `backend_settings.profile` 为 `qwenpaw`。
-- Linux 有集成验证；macOS 和原生 Windows 尚未完成本项目端到端认证。不要把未验证说成已支持或绝对不可运行。
-- 审批端口异常、拒绝和超时按拒绝处理；一次批准不构成永久授权。显式 `permission_mode` 会覆盖 `approval_level` 映射。
-- MCP 支持 stdio 与 HTTP 投影，SSE 跳过；图片能力、Skills 资源和恢复行为仍有边界，见完整文档。
-- `tests/` 混合单元与真实集成脚本。后者可能读取凭据、调用计费模型或执行工具，不要直接盲跑整个目录。
+- The current manifest and monkeypatch loader support QwenPaw `>=2.2.0, <2.3.0`. Reserved code for a future official loader does not mean 2.3+ is supported.
+- The service environment must have a compatible DSH CLI, ACP SDK, model routing, and credentials. Installing QwenPaw does not configure DSH models.
+- The default DSH profile is `acp`. For the bridge's real-time deltas, model catalog, and permission presets, install the separate [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) into DSH, then explicitly set `backend_settings.profile` to `qwenpaw`.
+- Linux has integration-test coverage. This project has not completed end-to-end validation on macOS or native Windows. Unverified does not mean either supported or unable to run.
+- Approval-port errors, denials, and timeouts mean denial; one approval is not permanent authorization. An explicit `permission_mode` overrides the `approval_level` mapping. read-only is not a file-read allowlist.
+- MCP projection supports stdio and HTTP; SSE is skipped. See the full documentation for image, Skills-resource, and session-resumption limits.
+- `tests/` mixes unit tests with live integration scripts. The latter may read credentials, call billable models, or execute tools. Do not blindly run the whole directory.
 
-## 分发与许可
+## Distribution and license
 
-`dist/qwenpaw-dsh-1.1.0-plugin.zip` 与本目录源码对应，可用 `tools/plugin_package.py check` 逐成员核对。历史 `1.0.0` / `1.0.1` ZIP 是各自时点的快照，**不得重打同名版本**；其中 `1.0.1` 不含本目录的 `LICENSE` 与之后的安全修复。需要重新打包时从仓库根使用 [`tools/plugin_package.py`](../tools/README.md)：显式白名单包含本目录 `LICENSE`（与仓库根逐字节一致），输出到新文件名并运行 `check`。
+`dist/qwenpaw-dsh-1.1.1-plugin.zip` is the 1.1.1 release snapshot; `dist/qwenpaw-dsh-1.1.0-plugin.zip` is the earlier 1.1.0 snapshot. Use `tools/plugin_package.py check` to compare each package with its matching tagged source, not later documentation on main. Historical `1.0.0` / `1.0.1` ZIPs are snapshots of their own releases: **never rebuild an existing version under the same filename**. Version `1.0.1` lacks this directory's `LICENSE` and later safety fixes. To package a new release, use [`tools/plugin_package.py`](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/tools/README.md) from the repository root. Its explicit allowlist includes this directory's `LICENSE`, byte-identical to the root license. Write a new output file and run `check`.
 
-DSH 桥、桥的 web 状态卡与源码辅助工具都不是此插件的内置组件，不会自动安装或启动。
+The DSH bridge, its web status card, and source helper tools are not bundled with this plugin and are not installed or started automatically.
 
-Apache License 2.0，见本目录 [`LICENSE`](LICENSE)（与[仓库根 LICENSE](../LICENSE) 相同）。本项目为社区集成，非厂商官方组件。
+Apache License 2.0; see [`LICENSE`](LICENSE) in this directory, identical to the [repository root LICENSE](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/LICENSE). This is a community integration, not an official vendor component.

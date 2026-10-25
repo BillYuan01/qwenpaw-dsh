@@ -1,36 +1,40 @@
 # tools
 
-本地交付工具。均为 stdlib/现有运行时，不安装依赖、不启动 DSH、不读真实凭据。它们不是发布授权。
+Local delivery tools using the standard library and existing runtime. They do not install dependencies, start DSH, or read real credentials. Their availability does not authorize a release.
 
 ## `plugin_package.py`
 
-显式白名单（21 个文件）打包/校验器。包内布局是 `plugin.json`、`plugin.py`、`README.md`、`LICENSE`、`qwenpaw_dsh/`，没有 `tests/`、缓存、状态或链接。
+A package builder/checker with an explicit 21-file allowlist. Packages contain `plugin.json`, `plugin.py`, `README.md`, `LICENSE`, and `qwenpaw_dsh/`, with no tests, caches, state, or symlinks.
+
+Run from the repository root:
 
 ```sh
-# 构建到新路径（拒绝覆盖；输出不得在源码树内）。期望版本取自当前 plugin.json。
+# Build to a new path: no overwrites or output inside the source tree.
+# Read the expected version from the checkout's plugin.json.
+VERSION=$(python3 -c 'import json;print(json.load(open("qwenpaw-dsh/plugin.json"))["version"])')
 python tools/plugin_package.py build \
-  --source . --output /path/outside/repo/qwenpaw-dsh-1.1.0-plugin.zip \
-  --expected-version 1.1.0
+  --source . --output /path/outside/repo/qwenpaw-dsh-${VERSION}-plugin.zip \
+  --expected-version "${VERSION}"
 
-# 只读校验（当前发布包应通过；历史 dist/1.0.1 应失败）
+# Read-only verification against the same checkout used to build the package.
 python tools/plugin_package.py check \
-  --zip dist/qwenpaw-dsh-1.1.0-plugin.zip \
-  --source . --expected-version 1.1.0
+  --zip /path/outside/repo/qwenpaw-dsh-${VERSION}-plugin.zip \
+  --source . --expected-version "${VERSION}"
 ```
 
-保证：
+Guarantees:
 
-- 只读明确 checkout；不复制 `~/.qwenpaw/plugins/` 的现役安装。
-- 源文件/目录逐级 `lstat`；符号链接、FIFO/设备等非常规文件、白名单外源码文件一律拒绝。
-- 固定成员顺序、`1980-01-01` 时间戳、`0644` 权限、`ZIP_STORED`；同一源码两次构建字节一致。
-- 输出已存在（含悬空链接）或位于源码树内 → 拒绝；先写临时文件再原子链接，不覆写。
-- 校验重复成员、路径穿越/绝对路径、目录条目、权限、加密位、版本、LICENSE 一致性、每个成员字节，以及 `plugin.py` 的 `_shutdown(**kwargs)`（AST，不执行代码）。
+- Reads the selected checkout only; does not copy an active installation from the QwenPaw plugins directory.
+- Uses `lstat` at each source file/directory level. Rejects symlinks, non-regular files such as FIFOs/devices, and source files outside the allowlist.
+- Fixes member order, `1980-01-01` timestamps, `0644` permissions, and `ZIP_STORED`; two builds from identical source are byte-identical.
+- Rejects existing output paths (including dangling symlinks) and output within the source tree. Writes a temporary file and links it atomically without overwriting.
+- Checks duplicate members, path traversal/absolute paths, directory entries, permissions, encryption flags, versions, LICENSE equality, every member's bytes, and `plugin.py`'s `_shutdown(**kwargs)` signature through AST inspection without executing code.
 
-历史 `dist/` ZIP（`1.0.0` / `1.0.1`）只读校验失败是预期结果；工具不会修改它们。`--expected-version` 属于测试/发布断言，调用方应从 `qwenpaw-dsh/plugin.json` 读取当前值，不要写死历史版本。
+Read-only checks of historical `dist/` ZIPs (`1.0.0` / `1.0.1`) against current source are expected to fail; the tool does not modify them. `--expected-version` is a test/release assertion. Read it from `qwenpaw-dsh/plugin.json`; do not hardcode a historical version. Compare released ZIPs with their matching tagged source: later documentation on main may differ from the packaged README.
 
 ## `run_safe_tests.py`
 
-显式白名单的离线单元测试入口。默认 13 个文件：原 12 个共 **252** 项（其中前 11 个固定 **226** 项）+ 1.1.1 新增的 `test_event_mapper.py` **20** 项，合计 **272** 项。
+An offline unit-test entry point with an explicit allowlist. The default set is 13 files: the original 12 contain **252** tests (the first 11 have a fixed total of **226**), plus **20** tests in `test_event_mapper.py` added in 1.1.1, for **272** in total.
 
 ```sh
 python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
@@ -38,8 +42,8 @@ python tools/run_safe_tests.py --list
 python tools/run_safe_tests.py --only test_permission_mode.py --skip-count-check
 ```
 
-- 不做 `discover test_*.py` 宽泛收集；`tests/test_*_projection.py`、`smoke_adapter.py`、`stream_check.py`、`tests/contract/` 不在白名单。
-- 每个文件单独跑 `unittest discover -p <file>`；工作目录内层 `qwenpaw-dsh/`。
-- 一次性临时 `HOME/DSH_HOME/QWENPAW_HOME/QWENPAW_WORKING_DIR/TMPDIR`，最小环境 allowlist；不继承 key/token/PYTHONPATH。
-- 逐文件与总计打印 tests/failures/errors/skipped；skip 默认退出 3（`--allow-skips` 才接受），缺依赖/缺文件明确失败，不自动 pip。
-- 前 11 个文件与新增 `test_event_mapper.py` 的条数硬校验（分别合计 226 / 20），防止 0 tests 假绿；`test_delivery_tools.py` 仍按原有策略不固定条数。
+- Does not perform broad `discover test_*.py` collection. `tests/test_*_projection.py`, `smoke_adapter.py`, `stream_check.py`, and `tests/contract/` are not allowlisted.
+- Runs each file separately with `unittest discover -p <file>`, using the inner `qwenpaw-dsh/` as the working directory.
+- Uses disposable `HOME/DSH_HOME/QWENPAW_HOME/QWENPAW_WORKING_DIR/TMPDIR` directories and a minimal environment allowlist; keys, tokens, and PYTHONPATH are not inherited.
+- Reports tests/failures/errors/skipped per file and in total. Skips cause exit 3 by default (`--allow-skips` accepts them). Missing dependencies/files fail explicitly; no automatic pip installation.
+- Enforces test counts for the first 11 files and the new `test_event_mapper.py` (226 / 20 respectively), preventing false success from zero tests. `test_delivery_tools.py` retains its existing policy of no fixed count.
