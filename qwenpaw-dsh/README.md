@@ -2,7 +2,7 @@
 
 这是 QwenPaw 侧插件的安装根目录，包含 `plugin.json`、`plugin.py`、`LICENSE` 与 `qwenpaw_dsh/`。当前版本：**1.1.1**。本补丁仅修复嵌套工具结果文本映射，保持权限和其他运行行为不变。
 
-> 本版对应仓库的 `dist/qwenpaw-dsh-1.1.1-plugin.zip`；旧 ZIP 不覆盖。离线 272 项测试通过，不等于已在你的环境完成安装或真实读取复测。
+> 1.1.1 已在 Linux 上完成真实读取测试：工具完成事件直接带回文件文本。测试范围见仓库的[验证记录](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/docs/verification.md)，不代表所有环境已验证。发布 ZIP 保留该 tag 的文件；main 的后续文档更新不会重打旧包。
 >
 > 配套的 DSH 侧桥 [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) 保持 **v1.1.0**（本轮未改）；1.1.1 仍与该桥配套兼容。桥版号不表示 DSH 核心版本变成 1.1.0（兼容范围仍是 `>=0.2.0-rc.2 <0.3.0-0`）。
 
