@@ -30,7 +30,7 @@ python tools/plugin_package.py check \
 
 ## `run_safe_tests.py`
 
-显式白名单的离线单元测试入口。默认 12 个文件：现有 11 个共 **226** 项 + 本门的 `test_delivery_tools.py`。
+显式白名单的离线单元测试入口。默认 13 个文件：原 12 个共 **252** 项（其中前 11 个固定 **226** 项）+ 1.1.1 新增的 `test_event_mapper.py` **20** 项，合计 **272** 项。
 
 ```sh
 python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
@@ -42,4 +42,4 @@ python tools/run_safe_tests.py --only test_permission_mode.py --skip-count-check
 - 每个文件单独跑 `unittest discover -p <file>`；工作目录内层 `qwenpaw-dsh/`。
 - 一次性临时 `HOME/DSH_HOME/QWENPAW_HOME/QWENPAW_WORKING_DIR/TMPDIR`，最小环境 allowlist；不继承 key/token/PYTHONPATH。
 - 逐文件与总计打印 tests/failures/errors/skipped；skip 默认退出 3（`--allow-skips` 才接受），缺依赖/缺文件明确失败，不自动 pip。
-- 现有 11 个文件的条数硬校验（合计 226），防止 0 tests 假绿。
+- 前 11 个文件与新增 `test_event_mapper.py` 的条数硬校验（分别合计 226 / 20），防止 0 tests 假绿；`test_delivery_tools.py` 仍按原有策略不固定条数。

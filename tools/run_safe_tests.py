@@ -30,7 +30,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_DIR = REPO_ROOT / "qwenpaw-dsh"
 TESTS_DIR = PACKAGE_DIR / "tests"
 
-# Explicit whitelist. The first eleven files are the 226 documented safe tests.
+# Explicit whitelist. The first eleven files are the 226 documented safe tests;
+# ``test_delivery_tools.py`` and ``test_event_mapper.py`` are checked below.
 SAFE_TEST_FILES: tuple[str, ...] = (
     "test_permission_mode.py",
     "test_approval_port.py",
@@ -44,6 +45,7 @@ SAFE_TEST_FILES: tuple[str, ...] = (
     "test_host_contract.py",
     "test_file_projection_g4.py",
     "test_delivery_tools.py",
+    "test_event_mapper.py",
 )
 
 EXPECTED_EXISTING = {
@@ -60,6 +62,12 @@ EXPECTED_EXISTING = {
     "test_file_projection_g4.py": 27,
 }
 EXISTING_TOTAL = 226
+
+# Files added after the original 226-test baseline. Kept separate so the
+# documented existing-total guard stays exactly at 226.
+EXPECTED_ADDED = {
+    "test_event_mapper.py": 20,
+}
 
 RAN_RE = re.compile(r"^Ran (\d+) tests? in ", re.MULTILINE)
 FAILED_RE = re.compile(r"^FAILED\b.*$", re.MULTILINE)
@@ -127,9 +135,15 @@ def _resolve_python(value: str) -> str | None:
     return found
 
 
+def _expected_count(name: str) -> int | None:
+    if name in EXPECTED_EXISTING:
+        return EXPECTED_EXISTING[name]
+    return EXPECTED_ADDED.get(name)
+
+
 def _list_files() -> int:
     for name in SAFE_TEST_FILES:
-        count = EXPECTED_EXISTING.get(name)
+        count = _expected_count(name)
         print(f"{name}\t{count if count is not None else '-'}")
     return 0
 
@@ -228,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
                 totals[key] += int(counts[key])  # type: ignore[arg-type]
 
             status = counts["status"]
-            expected = EXPECTED_EXISTING.get(name)
+            expected = _expected_count(name)
             if (not args.skip_count_check and expected is not None
                     and int(counts["ran"]) != expected):
                 count_errors.append(

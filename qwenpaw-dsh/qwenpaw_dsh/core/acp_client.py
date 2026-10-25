@@ -24,7 +24,7 @@ log = logging.getLogger("qwenpaw.dsh")
 
 _STDIO_LIMIT = 50 * 1024 * 1024
 _CLIENT_NAME = "qwenpaw-dsh"
-_CLIENT_VERSION = "1.1.0"
+_CLIENT_VERSION = "1.1.1"
 _GENERATIONS = count(1)
 
 # Upper bound for closing a half-open spawn stack after a setup failure.

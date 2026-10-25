@@ -1,8 +1,10 @@
 # 项目状态（STATUS.md）
 
 > 一页纸现状。详细开发约定/待办见 [`AGENTS.md`](./AGENTS.md)；逐版变更见 [`CHANGELOG.md`](./CHANGELOG.md)。
-> 更新于 **2026-10-25**（v1.1.0）。
+> 更新于 **2026-10-25**（已发布 v1.1.0；当前源码 1.1.1 未发布）。
 
+> **未发布 1.1.1（源码）**：只修复 ACP 工具结果文本映射——`ToolCallProgress.content` 的 `ContentToolCallContent(type="content")` 内层 `TextContentBlock` 此前被丢弃，宿主看到的工具输出为空。补丁只改 `core/event_mapper.py`（另含版本常量与新测试/文档），工具结果上限 32768 字符并带截断标记，Agent 文本/思考不截断；image/audio/resource/diff/terminal 仍不投影。**未打 tag、未构建 ZIP、未部署、未 live 复验**。桥保持 `dsh-qwenpaw-bridge` v1.1.0，1.1.1 仍与其兼容。
+>
 > **2026-10-25 发布说明**：v1.1.0 是 2026-10-21 之后 G1–G5 安全/生命周期修复的首次统一发布，与桥 `dsh-qwenpaw-bridge` v1.1.0 配套。本版验证为**离线/静态**：12 个白名单文件 252 项单测、打包可重现、ZIP 对最终源码逐成员校验；**没有**重新运行真实 DSH、真实凭据、计费模型，也没有验证 macOS/原生 Windows。下方能力表与 live 数字仍是 2026-10-21 的历史证据，不是 v1.1.0 的复验结果。`dist/qwenpaw-dsh-1.1.0-plugin.zip` 由最终源码生成；历史 `1.0.0`/`1.0.1` ZIP 未改动。
 
 ## 这是什么
@@ -13,17 +15,17 @@
 
 | 项 | 版本 | 说明 |
 |---|---|---|
-| 仓库发布 | **v1.1.0** | 2026-10-25；与桥配套 |
-| `qwenpaw-dsh`（QwenPaw 侧插件） | **1.1.0** | `qwenpaw-dsh/plugin.json` |
-| `dsh-qwenpaw-bridge`（DSH 侧桥） | **1.1.0** | 独立仓库：[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（本次同版号，之后可独立维护） |
+| 仓库发布 | **v1.1.0** | 最近已发布版本（2026-10-25）；1.1.1 未发布 |
+| `qwenpaw-dsh`（QwenPaw 侧插件） | **1.1.1（未发布）** | 当前源码 `qwenpaw-dsh/plugin.json`；已发布为 1.1.0 |
+| `dsh-qwenpaw-bridge`（DSH 侧桥） | **1.1.0** | 本轮未改；独立仓库：[`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) |
 
 **运行要求**：QwenPaw `2.2.x`（守卫区间 `[2.2.0, 2.3.0)`）· DSH `>=0.2.0-rc.2 <0.3.0-0`（历史端到端验证基于 `0.2.0-rc.2`）· Python `~/.qwenpaw/venv` · 一个可用的模型路由。
 
-## 能力（下表为 2026-10-21 历史 live 证据，不是 v1.1.0 复验）
+## 能力（下表为 2026-10-21 历史 live 证据，不是 v1.1.0 / 1.1.1 复验）
 
 | 能力 | 状态 | 关键证据 |
 |---|---|---|
-| 一等智能体 + 事件映射 | ✅ | `chat_with_agent` → ACP → `dsh`；文本/思考/工具事件全映射；会话跨重启恢复 |
+| 一等智能体 + 事件映射 | ✅（历史） | `chat_with_agent` → ACP → `dsh`；文本/思考/工具事件全映射；会话跨重启恢复。**2026-10-25 复现工具结果文本为空**，1.1.1 修复，待云端复验 |
 | **真流式** | ✅ | `qwenpaw` profile + 桥：一轮 **65 chunks**（基线 1），思考 **484 chunks** |
 | **审批对齐** | ✅ | 审批卡三径（批准/拒绝/超时）全过；`approval_level`↔DSH 权限档位三档 live 全过 |
 | **Skills 投影** | ✅ | `snake_case_skill` → `snake-case-skill` 可用（含 frontmatter 名字重写），取回 `SNAKE-CASE-OK` |

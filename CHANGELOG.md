@@ -2,6 +2,22 @@
 
 版本按语义化版本编号。本仓库发布 `qwenpaw-dsh`（QwenPaw 插件）；DSH 侧桥 `dsh-qwenpaw-bridge` 已拆到独立仓库发布。
 
+## Unreleased — 1.1.1（未发布）
+
+**工具结果文本修复（仅 QwenPaw 侧插件）。** 桥 `dsh-qwenpaw-bridge` 保持 v1.1.0 不变，仍与 1.1.1 配套兼容。本版不打 tag、不构建 ZIP、不部署，也未重新运行真实 DSH/计费模型。
+
+### 修复
+
+- **工具完成事件丢失输出文本**：ACP `ToolCallProgress.content` 的元素是 `ContentToolCallContent(type="content", content=TextContentBlock(...))`，旧 `text_of` 只读顶层 `text`（或 dict `["text"]`），内层文本被丢弃，宿主看到 `TOOL_COMPLETED` 但 `text` 为空。现在按稳定契约读取 `type="content"` 包装的 `content` 与 `type="text"` 的 `text`；多块保持顺序。
+- **只投影文本**：image/audio/resource(`blob`)/resource_link/diff/terminal 及未知 type 一律返回空文本，不做 `str()`/`repr()`、不展开 base64，也不读取 `rawInput`/`rawOutput`。无 `type` 的旧载荷仅在存在 `text` 字段时兼容。
+- **边界**：工具结果文本上限 **32768 字符**，超出时追加稳定标记 `…[qwenpaw-dsh: tool text truncated; N chars omitted]`；该上限只作用于工具结果，Agent 文本/思考不截断，也不影响 stdout 协议。递归深度上限 6 + 路径 visited，自引用/过深包装安全返回空串。
+- 保持既有协议语义：`TOOL_STARTED` 的 id/title/kind/status/arguments 不变；`failed` 仍映射为 `TOOL_COMPLETED` + `data.status="failed"`；`map_stop_reason` 未改。
+
+### 验证（离线）
+
+- 新增 `qwenpaw-dsh/tests/test_event_mapper.py`（**20** 项）：真实 ACP SDK `ContentToolCallContent` + `ToolCallProgress`（completed/failed/in_progress）、等价 dict 嵌套、多块顺序、空/未知、image/audio/blob 合成 base64 不入文本、对象 `repr` 不泄漏、自引用/50 层嵌套不挂、工具超限截断可知、Agent 文本/思考不误截断、`TOOL_STARTED` 元数据保持。基线 `8f67e9c` 先红（含探针 `text_len=0`），补丁后 20/20 绿。
+- `tools/run_safe_tests.py` 白名单 12 → 13 文件，新增文件固定 20 项；既有 11 文件 226 项与防 0 / 总数校验不变，总数为 **272**（252 + 20），0 skip。
+
 ## v1.1.0 — 2026-10-25
 
 **配套发布版（与 `dsh-qwenpaw-bridge` v1.1.0 同版号）。** 这是 2026-10-21 之后安全与生命周期修复的首次统一发布：把之前只在源码里的收紧行为、安装包工具与安全测试入口，收进一个可追溯的版本。

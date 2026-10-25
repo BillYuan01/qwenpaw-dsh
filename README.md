@@ -4,7 +4,7 @@
 
 这是社区集成，不是 QwenPaw 或 DeepSeek 的官方组件。插件不改写双方安装目录中的核心源码，但会在 QwenPaw 2.2.x 进程内，对后端注册表及其引用做可还原的运行时 monkeypatch。
 
-**当前插件版本：`1.1.0`**，以 [`qwenpaw-dsh/plugin.json`](qwenpaw-dsh/plugin.json) 为准。本版与 DSH 侧桥 **`dsh-qwenpaw-bridge` v1.1.0** 配套发布：两个仓库本次使用同一版号，便于对照安装与排障；之后仍可各自独立演进。桥仓库见 [`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)（发布后对应 tag 为 `v1.1.0`）。
+**当前插件源码版本：`1.1.1`（未发布）**，以 [`qwenpaw-dsh/plugin.json`](qwenpaw-dsh/plugin.json) 为准。1.1.1 只修复工具结果文本映射（`ContentToolCallContent` 内层文本此前被丢弃），不改权限、预算或其他功能；**尚未打 tag、构建 ZIP 或发布**。DSH 侧桥保持 **`dsh-qwenpaw-bridge` v1.1.0** 不变，1.1.1 仍与其配套兼容。已发布的插件版本是 **`1.1.0`**（与桥同版号），其说明保留在下方发布边界与历史记录中；桥仓库见 [`BillYuan01/dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge)。
 
 > **本版是离线验证的发布版，不是“生产已验收”声明。** v1.1.0 的测试入口不启动真实 DSH、不读真实凭据、不调用计费模型；本版没有重新执行历史 live 集成，也没有在 macOS / 原生 Windows 上完成端到端认证。`dist/qwenpaw-dsh-1.1.0-plugin.zip` 由本仓库最终源码按白名单可重现构建，校验方式见 [`dist/README.md`](dist/README.md)。历史 `1.0.0` / `1.0.1` ZIP 保持原字节，不会被重打或覆盖。
 
@@ -44,13 +44,15 @@ DSH 的 acp profile，或安装了桥的 qwenpaw profile
 
 **不要把辅助工具的限制套到整个桥或本插件上。** 桥仓库的环境同步工具目前在 Linux 验证，macOS 未验证，原生 Windows 暂不支持；它不是本项目必装依赖。
 
-### 本版（v1.1.0）的验证边界
+### 验证边界（v1.1.0 发布 / 未发布 1.1.1 增量）
 
 | 类别 | 本版实际做了什么 |
 |---|---|
 | 已执行 | 12 个白名单文件的 **252** 项离线单测（0 skip）；打包器对同一源码两次构建字节一致；生成的 ZIP 与最终源码逐成员比对；成员名/权限/版本/`LICENSE`/卸载回调校验；Python 语法编译、shell 语法、Markdown 本地链接与 `git diff --check`；待发布文本与新增 diff 的有限隐私扫描 |
 | 未执行 | 真实 `dsh` 进程 / ACP live 回合、真实凭据、计费模型、真实插件安装或升级、macOS、原生 Windows、WSL 专项 |
 | 明确行为 | `history()` 返回空列表（ACP 会话可 resume，但不会重建 QwenPaw 历史）；Skills 快照只增不自动 GC；图片只读普通文件且有 15 MiB 上限；MCP 变化会 close + resume，失败只新建并告警 |
+
+> **未发布 1.1.1 的增量**：新增 `qwenpaw-dsh/tests/test_event_mapper.py`（20 项，先红后绿），安全 runner 白名单变为 13 个文件、**272** 项（252 + 20）。这是离线/静态结果，不表示现役安装已更新或 live 已复验；1.1.1 未发布。
 
 历史 live 证据（115 单测、契约 s01–s06、流式/审批/Skills/MCP/图片）记录在对应版本的 CHANGELOG 与 `docs/` 中，代表当时环境，不是 v1.1.0 的复验结果。
 
