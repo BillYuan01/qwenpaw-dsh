@@ -4,6 +4,7 @@ Release snapshots: **do not edit them manually or rebuild an existing version un
 
 | File | Size (bytes) | SHA256 | Notes |
 |---|---:|---|---|
+| `qwenpaw-dsh-1.1.2-plugin.zip` | 209342 | `d73c8a294e7948c01d01bda616e9aeab25e2d02285e04f34d32ec58188f98847` | 2026-10-28 host-version gate fix for QwenPaw 2.3.0b1; members match its release source |
 | `qwenpaw-dsh-1.1.1-plugin.zip` | 207452 | `6a7bffb1f58adcdd8b41cdbe83d4d4254454e29570fe9638cafbaa1b7a0af5af` | 2026-10-25 tool-mapping patch; members match its release source |
 | `qwenpaw-dsh-1.1.0-plugin.zip` | 203101 | `527ea24b2219f8018a3da80e10af6f56c7933f4e428eea761a50ae624628971d` | Historical v1.1.0 snapshot from 2026-10-25 |
 | `qwenpaw-dsh-1.0.1-plugin.zip` | 38873 | `2689d89a9cd62d748582185c07ac2654021fe9c1cced57d5c64ace0877bf4a2d` | v1.0.1 snapshot released on 2026-10-21 |
@@ -24,11 +25,11 @@ This does not mean the old package is corrupt; it was never a snapshot of curren
 
 ## Checking the current release package
 
-Run from `dist/` in the matching v1.1.1 release checkout:
+Run from `dist/` in the matching v1.1.2 release checkout:
 
 ```sh
 python ../tools/plugin_package.py check \
-  --zip qwenpaw-dsh-1.1.1-plugin.zip --source .. --expected-version 1.1.1
+  --zip qwenpaw-dsh-1.1.2-plugin.zip --source .. --expected-version 1.1.2
 ```
 
 The release package's 21 members match its release source byte for byte, with fixed `1980-01-01` timestamps, `0644` permissions, and no directory entries. Rebuilding identical source should produce the same SHA256. Later documentation changes on main can change packaged README bytes: compare the ZIP with its matching tag, not a newer checkout.
