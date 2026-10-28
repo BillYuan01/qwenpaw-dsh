@@ -474,12 +474,12 @@ class RunnerTests(unittest.TestCase):
     def write_test(self, name: str, body: str) -> None:
         (self.tests / name).write_text(body, encoding="utf-8")
 
-    def test_list_is_whitelist_only_and_counts_sum_to_246(self) -> None:
+    def test_list_is_whitelist_only_and_counts_sum_to_252(self) -> None:
         result = run_runner(["--list"], cwd=REPO_ROOT, home=self.tmp / "home")
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         lines = [line for line in result.stdout.splitlines() if line.strip()]
         names = [line.split("\t")[0] for line in lines]
-        self.assertEqual(len(names), 13)
+        self.assertEqual(len(names), 14)
         for live in LIVE_TEST_NAMES:
             self.assertNotIn(live, names)
         expected = 0
@@ -487,7 +487,7 @@ class RunnerTests(unittest.TestCase):
             parts = line.split("\t")
             if len(parts) == 2 and parts[1].isdigit():
                 expected += int(parts[1])
-        self.assertEqual(expected, 246)
+        self.assertEqual(expected, 252)
 
     def test_runner_does_not_execute_live_sentinel(self) -> None:
         marker = self.tmp / "sentinel-ran"

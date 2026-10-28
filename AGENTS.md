@@ -5,8 +5,8 @@ This repository maintains the QwenPaw-side Python plugin. See [README.md](README
 ## Before making changes
 
 - Read the relevant source, tests, and current diff. Preserve existing work; do not use reset/clean to clear the working tree.
-- The installable directory is the inner `qwenpaw-dsh/`. The current plugin is 1.1.1 and its companion bridge is 1.1.0. Manifests are authoritative; do not infer compatibility from matching repository versions.
-- Supported hosts are `>=2.2.0, <2.3.0`. The future official loader is not a promise of 2.3+ support; do not remove guards to make tests pass.
+- The installable directory is the inner `qwenpaw-dsh/`. The current plugin is 1.1.2 and its companion bridge is 1.1.0. Manifests are authoritative; do not infer compatibility from matching repository versions.
+- Supported hosts are `>=2.2.0, <2.3.0` (PEP 440), so pre-releases of 2.3.0 such as `2.3.0b1` are admitted while `2.3.0` itself is not. The future official loader is not a promise of 2.3+ support; do not remove guards to make tests pass.
 - Stay within the request. Documentation work does not authorize code fixes, deployment, model calls, or releases.
 
 ## Code entry points

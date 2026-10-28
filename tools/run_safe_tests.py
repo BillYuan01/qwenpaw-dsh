@@ -46,6 +46,7 @@ SAFE_TEST_FILES: tuple[str, ...] = (
     "test_file_projection_g4.py",
     "test_delivery_tools.py",
     "test_event_mapper.py",
+    "test_version_gate.py",
 )
 
 EXPECTED_EXISTING = {
@@ -67,6 +68,7 @@ EXISTING_TOTAL = 226
 # documented existing-total guard stays exactly at 226.
 EXPECTED_ADDED = {
     "test_event_mapper.py": 20,
+    "test_version_gate.py": 6,
 }
 
 RAN_RE = re.compile(r"^Ran (\d+) tests? in ", re.MULTILINE)

@@ -2,6 +2,29 @@
 
 版本按语义化版本编号。本仓库发布 `qwenpaw-dsh`（QwenPaw 插件）；DSH 侧桥 `dsh-qwenpaw-bridge` 已拆到独立仓库发布。
 
+## v1.1.2 — 2026-10-28
+
+**修复 QwenPaw 2.3.0b1 上插件被误判失败（DSH backend 从 provider 列表消失）。** 本版只改 host 版本门禁与其回归测试，不改 ACP 协议、不改工具映射、不改桥 `dsh-qwenpaw-bridge`（保持 v1.1.0）。附带同一处门禁的 fail-closed 收紧。
+
+### 修复
+
+- **预发布版本被排除在支持区间外**：`MonkeypatchLoader._in_range` 逐段刮取数字，把 `"2.3.0b1"` 的第三段 `"0b1"` 读成 patch `1`，得到 `(2, 3, 1)`；与排他上界 `(2, 3, 0)` 比较时被判为越界，日志报 `version 2.3.0b1 outside supported range`。于是 `monkeypatch-2.2` 策略拒绝挂载，`official-plugin` 策略在 2.3.0b1 上又找不到任何注册入口（`register_provider` / `register_harness_provider` / `register_harness` / `register_agent_backend` 均不存在），两条策略同时失守，插件被标记 **FAILED** 并回滚全部注册 —— DSH 不再进入 `PROVIDER_CATALOG`，`backend: "dsh"` 的 agent 建不出 adapter。
+- **改用 PEP 440 比较**：`_in_range` 先走 `packaging.version.Version`，预发布按其基版之前排序，`2.3.0b1 < 2.3.0` 成立，落在 `[2.2.0, 2.3.0)` 内。逐段刮数字的逻辑仅作 `packaging` 缺失时的降级路径保留。
+- **降级路径改为 fail-closed**：旧降级对无法解析的版本串产出 `(0,)`，会**错误放行**未知 host；现在任一段无数字即返回 `False`。未知版本不挂载，好过在未验证的内部结构上打补丁。
+- 未改动 `version_range` 边界本身，也未放宽到 `2.3.0` 及以后：`2.3.0` 仍为排他上界，`2.4.0` 仍拒绝。
+
+### 验证（离线 + 本机）
+
+- 新增 `qwenpaw-dsh/tests/test_version_gate.py`（**6** 项）：预发布 `2.3.0a1`/`2.3.0b1`/`2.3.0b2`/`2.3.0rc1` 均放行、`2.3.0`/`2.3.1`/`2.4.0` 仍拒绝、`2.2.0`～`2.2.2.post1` 放行、`1.9.9`/`2.1.9` 拒绝、`None`/空串不挂载、`not-a-version`/`x.y.z` fail-closed。基线为 1.1.1 的 `_in_range` 时 6 项全红。
+- `tools/run_safe_tests.py` 白名单 13 → 14 文件，新增文件固定 6 项；既有 11 文件 226 项与防 0 / 总数校验不变，总数 246 → **252**，0 skip。`tests/test_delivery_tools.py` 的白名单文件数与总数断言同步更新为 14 / 252。
+- 本机实测（QwenPaw **2.3.0b1**、Linux）：`probe()` 返回 `ok: true`、`missing: []`，四个 patch 目标 `qwenpaw.harnesses.registry` / `qwenpaw.harnesses.runtime` / `qwenpaw.app.routers.harnesses` / `qwenpaw.app.routers.agents` 全部挂载；`PROVIDER_CATALOG` 由 `['codex','claude','qoder']` 变为加 `'dsh'`；`get_provider("dsh")` 返回 `DeepSeek Harness`；`create_adapter("dsh", ...)` 返回 `qwenpaw_dsh.core.adapter.DshAdapter`；`adapter_config_key` 正常返回；`unmount()` 后 catalog 精确还原且 `get_provider("dsh")` 重新抛 `Unknown third-party agent backend`。
+- **未验证**：真实 DSH 进程的 ACP 端到端对话、真实凭据、计费模型、macOS / 原生 Windows 均未在本版复测；门禁放宽只覆盖 2.3.0b1 这一具体 pre-release，2.3.0 正式版发布后需重新判定其内部结构是否仍与四个 patch 目标一致。
+
+### 已知边界
+
+- `2.3.0b1` 目前没有官方 harness 插件注册入口。本版依赖 monkeypatch 打 2.2.x 内部符号；若 2.3 正式版改动这些符号的语义（而非签名），`mount()` 仍会因目标缺失而拒绝挂载，不会静默半挂载。
+- `plugin.json` 的 `qwenpaw_version.max: "2.3.0"` 语义为排他上界（与 `_version_compat.py` 的左闭右开一致），本版未改动；QwenPaw 当前临时禁用了上界强制，恢复后 `2.3.0b1` 会被折算为 `2.3.0` 而命中上界，届时需同步调整 manifest。
+
 ## v1.1.1 — 2026-10-25
 
 **工具结果文本修复（仅 QwenPaw 侧插件）。** 桥 `dsh-qwenpaw-bridge` 保持 v1.1.0 不变，仍与 1.1.1 配套兼容。本版附新的白名单 ZIP；发布验收为 272 项离线测试及产物校验，真实工具映射需安装后另行复测。

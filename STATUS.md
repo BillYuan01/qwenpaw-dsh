@@ -1,13 +1,15 @@
 # Project status
 
 > Current overview. See [AGENTS.md](AGENTS.md) for maintenance rules, [architecture](docs/architecture.md) for implementation limits, and [CHANGELOG.md](CHANGELOG.md) for release history.
-> Updated **2026-10-25** for the v1.1.1 tool-text mapping patch.
+> Updated **2026-10-28** for the v1.1.2 host-version gate fix.
 
 ## Current release
 
-**v1.1.1** fixes ACP tool-result text mapping. The nested `TextContentBlock` inside `ToolCallProgress.content` / `ContentToolCallContent(type="content")` was previously dropped, leaving host tool output empty. The runtime fix is confined to `core/event_mapper.py`, alongside version constants, new tests, and documentation. Tool results have a 32768-character limit with a truncation marker; agent text and reasoning are not truncated. image/audio/resource/diff/terminal content is still not projected.
+**v1.1.2** fixes the host-version gate that made the plugin unmountable on QwenPaw **2.3.0b1**. `MonkeypatchLoader._in_range` scraped digits out of each dot-segment, so `"2.3.0b1"` became `(2, 3, 1)` and sorted *above* the exclusive bound `2.3.0`. With `monkeypatch-2.2` rejecting the version and `official-plugin` finding no registration entry on 2.3.0b1, both mount strategies failed, the plugin was marked FAILED, and the DSH backend dropped out of `PROVIDER_CATALOG`. The gate now compares with `packaging.version.Version` (PEP 440: a pre-release sorts before its base release) and the digit-scraping path survives only as a dependency-free fallback that fails closed on unparseable input. The runtime change is confined to `core/loaders/monkeypatch.py`, alongside version constants, a new test file, and documentation. The `version_range` bounds themselves are unchanged: `2.3.0` is still exclusive.
 
-All **272 offline tests passed**, and the new ZIP was verified against its release source. The installed plugin was also hot-loaded and live-tested on Linux: a single read tool's completion event directly returned **182 characters** of synthetic file text, including a random marker absent from the prompt. See the [verification record](docs/verification.md). The bridge remains `dsh-qwenpaw-bridge` **v1.1.0**, compatible with plugin 1.1.1.
+**v1.1.1** fixed ACP tool-result text mapping. The nested `TextContentBlock` inside `ToolCallProgress.content` / `ContentToolCallContent(type="content")` was previously dropped, leaving host tool output empty. Tool results have a 32768-character limit with a truncation marker; agent text and reasoning are not truncated. image/audio/resource/diff/terminal content is still not projected.
+
+All **252 offline tests passed** in 14 allowlisted files. On this machine (Linux, QwenPaw 2.3.0b1) the loaders were exercised directly: `probe()` reports `ok: true` with all four patch targets mounted, `PROVIDER_CATALOG` gains `dsh`, `get_provider("dsh")` returns `DeepSeek Harness`, `create_adapter` returns a `DshAdapter`, and `unmount()` restores the catalog exactly. **Not verified in this version:** a real DSH ACP conversation, credentials, billable models, macOS/native Windows. See the [verification record](docs/verification.md). The bridge remains `dsh-qwenpaw-bridge` **v1.1.0**, compatible with plugin 1.1.2.
 
 **v1.1.0 release-stage context (2026-10-25):** This was the first consolidated release of the G1–G5 safety/lifecycle fixes made after 2026-10-21, paired with bridge v1.1.0. Release-stage verification was offline/static: 252 unit tests in 12 allowlisted files, reproducible packaging, and member-by-member ZIP comparison against final source. That stage did not rerun real DSH, credentials, or billable models, or validate macOS/native Windows. Later Linux live checks for 1.1.0 and 1.1.1 are recorded separately in [verification.md](docs/verification.md). The capability figures below remain historical evidence from 2026-10-21. The 1.1.0 ZIP was built from its final release source; historical `1.0.0` / `1.0.1` ZIPs are unchanged.
 
@@ -19,8 +21,8 @@ A **DeepSeek Harness (`dsh`)** integration that makes DSH a **first-class QwenPa
 
 | Component | Version | Notes |
 |---|---|---|
-| Repository release | **v1.1.1** | Tool-result text patch (2026-10-25) |
-| `qwenpaw-dsh` (QwenPaw plugin) | **1.1.1** | `qwenpaw-dsh/plugin.json`; bridge remains 1.1.0 |
+| Repository release | **v1.1.2** | Host-version gate fix for QwenPaw 2.3.0b1 (2026-10-28) |
+| `qwenpaw-dsh` (QwenPaw plugin) | **1.1.2** | `qwenpaw-dsh/plugin.json`; bridge remains 1.1.0 |
 | `dsh-qwenpaw-bridge` (DSH bridge) | **1.1.0** | Unchanged by this patch; [separate repository](https://github.com/BillYuan01/dsh-qwenpaw-bridge) |
 
 **Requirements:** QwenPaw `2.2.x` (guard range `[2.2.0, 2.3.0)`), DSH `>=0.2.0-rc.2 <0.3.0-0`, the QwenPaw Python environment, and a working model route. Historical end-to-end tests used DSH `0.2.0-rc.2`; the 2026-10-25 live checks used `0.2.1-rc.2`.

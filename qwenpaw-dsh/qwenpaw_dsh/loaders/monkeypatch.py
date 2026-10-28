@@ -71,14 +71,33 @@ class MonkeypatchLoader:
         if not version:
             return False
 
-        def key(value: str) -> tuple:
+        # PEP 440 compare first: pre-releases sort *before* their base release,
+        # so "2.3.0b1" < "2.3.0" holds and beta hosts stay mountable. The old
+        # digit-scraping fallback below read "0b1" as patch 1, producing
+        # (2, 3, 1) — which wrongly pushed every pre-release outside an
+        # exclusive upper bound and made the whole loader unmountable on
+        # 2.3.0b1 even though every patch target still resolved.
+        try:
+            from packaging.version import InvalidVersion, Version
+
+            return Version(lo) <= Version(version) < Version(hi)
+        except (InvalidVersion, TypeError, ValueError):  # noqa: BLE001
+            pass
+
+        def key(value: str) -> tuple | None:
             parts = []
             for piece in value.split(".")[:3]:
                 digits = "".join(ch for ch in piece if ch.isdigit())
-                parts.append(int(digits) if digits else 0)
-            return tuple(parts)
+                if not digits:
+                    return None
+                parts.append(int(digits))
+            return tuple(parts) or None
 
-        return key(lo) <= key(version) < key(hi)
+        lo_key, version_key, hi_key = key(lo), key(version), key(hi)
+        if lo_key is None or version_key is None or hi_key is None:
+            # Fail closed: an unparseable host version must never be mounted.
+            return False
+        return lo_key <= version_key < hi_key
 
     # -- port --------------------------------------------------------------
     def probe(self) -> MountReport:
