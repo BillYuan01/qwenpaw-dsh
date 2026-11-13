@@ -13,7 +13,7 @@
 | `dist/` | Historical release packages; do not overwrite |
 | `patches/qwenpaw-upstream/` | Archived patches; not applied automatically |
 
-The [architecture guide](architecture.md) describes runtime behavior; [AGENTS.md](../AGENTS.md) defines contribution constraints. For installation and usage, start with the [root README](../README.md).
+The [architecture guide](architecture.md) describes runtime behavior; [AGENTS.md](../AGENTS.md) defines contribution constraints. For installation and usage, start with the [root README](../README.md). Known code-level limits that are not fixed by documentation edits are recorded in [known-limitations.md](known-limitations.md).
 
 ## Default checks
 
@@ -25,7 +25,7 @@ python tools/run_safe_tests.py --list
 git diff --check
 ```
 
-The runner explicitly selects 13 files, currently totaling 272 tests: 226 existing safety tests, 26 packaging/runner tests, and 20 event-mapping tests. It uses temporary HOME and DSH_HOME directories and a minimal environment. It does not start DSH, read real credentials, or install dependencies automatically. Missing dependencies, zero tests, failures, and tests skipped under the default policy must not be reported as passes.
+The runner explicitly selects 14 files, currently totaling 278 tests: 226 baseline safety tests, 26 packaging/runner tests, 20 event-mapping tests, and 6 version-gate tests. It uses temporary HOME and DSH_HOME directories and a minimal environment. It does not start DSH, read real credentials, or install dependencies automatically. Missing dependencies, zero tests, failures, and tests skipped under the default policy must not be reported as passes.
 
 Choose tests that match the change. Do not call models for documentation-only updates.
 
@@ -34,7 +34,7 @@ Choose tests that match the change. Do not call models for documentation-only up
 | Event mapping | `test_event_mapper.py` |
 | Turns, connections, cancellation, resumption | `test_lifecycle.py` |
 | Models or host interfaces | `test_model_contract.py`, `test_host_contract.py` |
-| Approvals, loading | `test_permission_mode.py`, `test_approval_port.py`, `test_loader_wiring.py` |
+| Approvals, loading and version gates | `test_permission_mode.py`, `test_approval_port.py`, `test_loader_wiring.py`, `test_version_gate.py` |
 | Skills, images, MCP | `test_skills.py`, `test_skills_shadow_security.py`, `test_file_projection_g4.py`, `test_images.py`, `test_mcp.py` |
 | Packaging, test entry point | `test_delivery_tools.py` |
 
@@ -57,10 +57,11 @@ Historical material retains its original language, primarily Chinese: [CHANGELOG
 Use [tools/plugin_package.py](../tools/plugin_package.py), not files copied from an active installation. The builder uses a 21-file allowlist and rejects existing output paths, output inside the source tree, symlinks, and special files. Member order, timestamps, and permissions are fixed; the package includes a LICENSE identical to the root copy.
 
 ```sh
+VERSION=$(python3 -c 'import json;print(json.load(open("qwenpaw-dsh/plugin.json"))["version"])')
 python tools/plugin_package.py build --source . \
-  --output /path/outside/repo/qwenpaw-dsh-1.1.1-plugin.zip --expected-version 1.1.1
+  --output /path/outside/repo/qwenpaw-dsh-${VERSION}-plugin.zip --expected-version "${VERSION}"
 python tools/plugin_package.py check --source . \
-  --zip /path/outside/repo/qwenpaw-dsh-1.1.1-plugin.zip --expected-version 1.1.1
+  --zip /path/outside/repo/qwenpaw-dsh-${VERSION}-plugin.zip --expected-version "${VERSION}"
 ```
 
 `check` compares member bytes, versions, the license, and the shutdown callback signature against the selected checkout. **Compare a package only with the source version it was built from.** After documentation changes on main, checking an older tagged package against main will show differences; that does not mean the package is corrupt.

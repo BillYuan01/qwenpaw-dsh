@@ -34,7 +34,7 @@ Read-only checks of historical `dist/` ZIPs (`1.0.0` / `1.0.1`) against current 
 
 ## `run_safe_tests.py`
 
-An offline unit-test entry point with an explicit allowlist. The default set is 13 files: the original 12 contain **252** tests (the first 11 have a fixed total of **226**), plus **20** tests in `test_event_mapper.py` added in 1.1.1, for **272** in total.
+An offline unit-test entry point with an explicit allowlist. The default set is 14 files: the first 11 baseline files contain **226** tests, `test_delivery_tools.py` contains **26**, `test_event_mapper.py` contains **20**, and `test_version_gate.py` contains **6**, for **278** in total.
 
 ```sh
 python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
@@ -46,4 +46,4 @@ python tools/run_safe_tests.py --only test_permission_mode.py --skip-count-check
 - Runs each file separately with `unittest discover -p <file>`, using the inner `qwenpaw-dsh/` as the working directory.
 - Uses disposable `HOME/DSH_HOME/QWENPAW_HOME/QWENPAW_WORKING_DIR/TMPDIR` directories and a minimal environment allowlist; keys, tokens, and PYTHONPATH are not inherited.
 - Reports tests/failures/errors/skipped per file and in total. Skips cause exit 3 by default (`--allow-skips` accepts them). Missing dependencies/files fail explicitly; no automatic pip installation.
-- Enforces test counts for the first 11 files and the new `test_event_mapper.py` (226 / 20 respectively), preventing false success from zero tests. `test_delivery_tools.py` retains its existing policy of no fixed count.
+- Enforces test counts for the first 11 files and `test_event_mapper.py` / `test_version_gate.py` (226 / 20 / 6 respectively), preventing false success from zero tests. `test_delivery_tools.py` retains its existing policy of no fixed count.

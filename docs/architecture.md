@@ -4,7 +4,7 @@ This repository maintains the QwenPaw-side Python plugin. The DSH-side bridge li
 
 ## Loading
 
-`plugin.py` assembles `HostContext` and registers lifecycle hooks. The QwenPaw 2.2.x loader replaces the harness registry and references imported by value within the running process; it does not modify installed host files. It checks targets and versions before mounting and restores the original symbols on unloading. `OfficialLoader` reserves a future interface, not 2.3+ support. `DirectLoader` is for tests and embedding, not a production fallback after a loading failure.
+`plugin.py` assembles `HostContext` and registers lifecycle hooks. The QwenPaw 2.2.x/2.3.x loader replaces the harness registry and references imported by value within the running process; it does not modify installed host files. It checks targets and versions before mounting and restores the original symbols on normal unloading. An exception during successive attribute replacements can leave a partial mount; see [known limitations](known-limitations.md). `OfficialLoader` reserves a future interface, not a claim that official harness-plugin registration shipped in 2.3.0. `DirectLoader` is for tests and embedding, not a production fallback after a loading failure.
 
 `core/` depends on host event contracts and the ACP SDK, but does not import the registry or router. Approval services connect through `ApprovalPort`; concrete host imports stay in the port implementation.
 

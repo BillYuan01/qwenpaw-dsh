@@ -1,12 +1,12 @@
 # qwenpaw-dsh plugin directory
 
-This is the installable root of the QwenPaw-side plugin. It contains `plugin.json`, `plugin.py`, `LICENSE`, and `qwenpaw_dsh/`. Current version: **1.1.1**. This patch fixes nested tool-result text mapping without changing permissions or other runtime behavior.
+This is the installable root of the QwenPaw-side plugin. It contains `plugin.json`, `plugin.py`, `LICENSE`, and `qwenpaw_dsh/`. Current version: **1.1.3**. Version 1.1.3 extends the loader's supported host range to include QwenPaw 2.3.0 final; the nested tool-result text mapping fix was introduced in 1.1.1.
 
 > Version 1.1.1 passed a live file-read test on Linux: the tool completion event directly carried file text. See the repository's [verification record](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/docs/verification.md) for scope; other environments are not thereby verified. A release ZIP preserves its tag's files. Later documentation updates on main do not rebuild old packages.
 >
-> The companion DSH-side bridge, [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge), remains at **v1.1.0** and is compatible with plugin 1.1.1. The bridge version does not mean DSH core is version 1.1.0; the supported DSH range remains `>=0.2.0-rc.2 <0.3.0-0`.
+> The companion DSH-side bridge, [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge), remains at **v1.1.0** and is used with plugin 1.1.3 (the bridge's version need not match). The bridge version does not mean DSH core is version 1.1.0; the supported DSH range remains `>=0.2.0-rc.2 <0.3.0-0`.
 
-For installation, architecture, compatibility, and troubleshooting, see the [repository README](https://github.com/BillYuan01/qwenpaw-dsh#readme). Maintenance rules are in the [root AGENTS.md](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/AGENTS.md). Public links remain usable when this directory is installed separately.
+For installation, architecture, compatibility, and troubleshooting, see the [repository README](https://github.com/BillYuan01/qwenpaw-dsh#readme) and [known limitations](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/docs/known-limitations.md). Maintenance rules are in the [root AGENTS.md](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/AGENTS.md). Public links remain usable when this directory is installed separately.
 
 ## Installation
 
@@ -30,7 +30,7 @@ From another directory, use the actual path to this directory. Installation exec
 
 ## Distribution and license
 
-`dist/qwenpaw-dsh-1.1.1-plugin.zip` is the 1.1.1 release snapshot; `dist/qwenpaw-dsh-1.1.0-plugin.zip` is the earlier 1.1.0 snapshot. Use `tools/plugin_package.py check` to compare each package with its matching tagged source, not later documentation on main. Historical `1.0.0` / `1.0.1` ZIPs are snapshots of their own releases: **never rebuild an existing version under the same filename**. Version `1.0.1` lacks this directory's `LICENSE` and later safety fixes. To package a new release, use [`tools/plugin_package.py`](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/tools/README.md) from the repository root. Its explicit allowlist includes this directory's `LICENSE`, byte-identical to the root license. Write a new output file and run `check`.
+`dist/qwenpaw-dsh-1.1.3-plugin.zip` is the current 1.1.3 release snapshot; 1.1.2, 1.1.1, and 1.1.0 ZIPs are earlier snapshots. Use `tools/plugin_package.py check` to compare each package with its matching tagged source, not later documentation on main. Historical `1.0.0` / `1.0.1` ZIPs are snapshots of their own releases: **never rebuild an existing version under the same filename**. Version `1.0.1` lacks this directory's `LICENSE` and later safety fixes. To package a new release, use [`tools/plugin_package.py`](https://github.com/BillYuan01/qwenpaw-dsh/blob/main/tools/README.md) from the repository root. Its explicit allowlist includes this directory's `LICENSE`, byte-identical to the root license. Write a new output file and run `check`.
 
 The DSH bridge, its web status card, and source helper tools are not bundled with this plugin and are not installed or started automatically.
 

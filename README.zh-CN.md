@@ -6,7 +6,7 @@
 
 插件通过 ACP v1 驱动 DSH，负责会话、模型选择、工具事件和审批的衔接。这是社区项目，不是两家厂商的官方组件。
 
-当前版本：**1.1.1**。推荐搭配 [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，不要求两个组件同版号。
+当前版本：**1.1.3**。推荐搭配 [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，不要求两个组件同版号。
 
 ## 能做什么
 
@@ -48,7 +48,7 @@ dsh plugin --profile qwenpaw add /absolute/path/to/dsh-qwenpaw-bridge
 ### 2. 安装 QwenPaw 插件
 
 ```sh
-git clone --branch v1.1.1 https://github.com/BillYuan01/qwenpaw-dsh.git
+git clone --branch v1.1.3 https://github.com/BillYuan01/qwenpaw-dsh.git
 cd qwenpaw-dsh
 qwenpaw plugin install ./qwenpaw-dsh
 ```
@@ -83,11 +83,11 @@ qwenpaw plugin install ./qwenpaw-dsh
 
 显式设置的 `backend_settings.permission_mode` 优先于审批级别。审批端口故障、拒绝和超时都按拒绝处理，一次批准不代表永久放行。
 
-`read-only` 限制修改，**不是文件读取白名单**。MCP 连接投影也不等于完整传递 QwenPaw 的 Driver 策略。不要把测试目录或一条提示词当作硬隔离。
+`read-only` 限制修改，**不是文件读取白名单**。MCP 连接投影也不等于完整传递 QwenPaw 的 Driver 策略。不要把测试目录或一条提示词当作硬隔离。`workspace` 预设会设置 `approval_policy: never`，但当前审批回调并未将该值作为独立的强制拒绝规则；DSH 自身的权限限制仍可能生效。详见[已知实现限制](docs/known-limitations.md)。
 
 ## 常见问题
 
-**控制台没有 DSH 后端。** 检查插件是否装到实际使用的 QwenPaw 工作目录、宿主是否为支持的 2.2.x，以及加载日志是否报错。
+**控制台没有 DSH 后端。** 检查插件是否装到实际使用的 QwenPaw 工作目录、宿主是否为支持的 2.2.x 或 2.3.x，以及加载日志是否报错。
 
 **终端能运行 DSH，服务却找不到。** 服务的 `PATH` 可能不同，填写 `binary` 的绝对路径，并检查服务继承的 `DSH_HOME`。
 
@@ -97,7 +97,7 @@ qwenpaw plugin install ./qwenpaw-dsh
 
 **恢复会话后，为什么没有重建聊天记录？** ACP 会话恢复与 QwenPaw 历史回放是两回事。插件的 `history()` 目前返回空列表。
 
-**还有哪些限制？** SSE MCP、上下文用量显示和第三方后端 loop 模式选择尚不支持；图片能力在初始化时探测，切换模型后不重探。Skills 快照不会自动清理，源资源仍通过链接读取。更多实现说明见[架构文档（英文）](docs/architecture.md)。
+**还有哪些限制？** SSE MCP、上下文用量显示和第三方后端 loop 模式选择尚不支持；图片能力在初始化时探测，切换模型后不重探。Skills 快照不会自动清理，源资源仍通过链接读取。更多实现说明见[架构文档（英文）](docs/architecture.md)和[已知实现限制](docs/known-limitations.md)，包括流式传输失败与版本判断的边界情况。
 
 ## 测试与开发
 
@@ -105,7 +105,7 @@ qwenpaw plugin install ./qwenpaw-dsh
 python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
 ```
 
-这是不调用模型的白名单测试入口，目前共 272 项。不要直接对整个 `tests/` 目录做 pytest 收集，其中包含会启动真实 DSH、读取凭据或调用模型的脚本。
+这是不调用模型的白名单测试入口，目前为 14 个白名单文件、278 项测试。不要直接对整个 `tests/` 目录做 pytest 收集，其中包含会启动真实 DSH、读取凭据或调用模型的脚本。
 
 Linux 上已实测真实回答、流式、双会话并发、取消后继续使用和跨进程恢复；1.1.1 还验证了读取工具的完成事件直接带回文件文本。这些是特定环境下的测试，不是全平台保证。详见[验证记录（英文）](docs/verification.md)、[开发说明（英文）](docs/development.md)和 [AGENTS.md（英文）](AGENTS.md)。
 

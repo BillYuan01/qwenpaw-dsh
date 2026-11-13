@@ -6,7 +6,7 @@ Use DeepSeek Harness (DSH) in QwenPaw. Create a DSH agent, chat with it in the c
 
 The plugin drives DSH through ACP v1, connecting sessions, model selection, tool events, and approvals. This is a community project, not an official component from either vendor.
 
-Current version: **1.1.1**. Recommended bridge: [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge). The two components do not need matching version numbers.
+Current version: **1.1.3**. Recommended bridge: [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge). The two components do not need matching version numbers.
 
 ## Features
 
@@ -48,7 +48,7 @@ The bridge is not published to npm; install it from a local path as shown above.
 ### 2. Install the QwenPaw plugin
 
 ```sh
-git clone --branch v1.1.1 https://github.com/BillYuan01/qwenpaw-dsh.git
+git clone --branch v1.1.3 https://github.com/BillYuan01/qwenpaw-dsh.git
 cd qwenpaw-dsh
 qwenpaw plugin install ./qwenpaw-dsh
 ```
@@ -83,11 +83,11 @@ In the console, create an agent with the **DeepSeek Harness** backend and set it
 
 An explicit `backend_settings.permission_mode` overrides the approval level. Approval-port failures, denials, and timeouts are treated as denial. A single approval does not grant permanent access.
 
-`read-only` restricts changes; it is **not a file-read allowlist**. Projecting MCP connections does not fully propagate QwenPaw Driver policies either. A test directory or a prompt is not a hard isolation boundary.
+`read-only` restricts changes; it is **not a file-read allowlist**. Projecting MCP connections does not fully propagate QwenPaw Driver policies either. A test directory or a prompt is not a hard isolation boundary. The `workspace` preset sets `approval_policy: never`, but the current approval callback does not enforce this value as a separate unconditional denial rule; underlying DSH permissions still apply. See [known implementation limitations](docs/known-limitations.md).
 
 ## Troubleshooting
 
-**The DSH backend is missing from the console.** Check that the plugin is installed in the working directory used by the running QwenPaw instance, that the host is a supported 2.2.x version, and that loading logs show no errors.
+**The DSH backend is missing from the console.** Check that the plugin is installed in the working directory used by the running QwenPaw instance, that the host is a supported 2.2.x or 2.3.x version, and that loading logs show no errors.
 
 **DSH works in a terminal but the service cannot find it.** The service may have a different `PATH`. Set `binary` to an absolute path and check the service's inherited `DSH_HOME`.
 
@@ -97,7 +97,7 @@ An explicit `backend_settings.permission_mode` overrides the approval level. App
 
 **Why isn't chat history rebuilt after resuming a session?** ACP session resumption and QwenPaw history replay are separate features. The plugin's `history()` currently returns an empty list.
 
-**What else is limited?** SSE MCP, context-usage display, and loop-mode selection for third-party backends are not supported. Image capability is detected at initialization, not after a model switch. Skills snapshots are not cleaned up automatically, and source resources remain linked. See the [architecture guide](docs/architecture.md).
+**What else is limited?** SSE MCP, context-usage display, and loop-mode selection for third-party backends are not supported. Image capability is detected at initialization, not after a model switch. Skills snapshots are not cleaned up automatically, and source resources remain linked. See the [architecture guide](docs/architecture.md) and [known implementation limitations](docs/known-limitations.md), including delivery-failure and version-validation edge cases.
 
 ## Testing and development
 
@@ -105,7 +105,7 @@ An explicit `backend_settings.permission_mode` overrides the approval level. App
 python tools/run_safe_tests.py --python /path/to/qwenpaw-venv/bin/python
 ```
 
-This allowlisted test entry point runs 272 tests without model calls. Do not run pytest collection over all of `tests/`: it includes scripts that start real DSH processes, read credentials, or call models.
+This allowlisted test entry point selects 14 files / 278 tests without model calls. Do not run pytest collection over all of `tests/`: it includes scripts that start real DSH processes, read credentials, or call models.
 
 Live Linux tests have covered responses, streaming, two concurrent sessions, reuse after cancellation, and cross-process resumption. Version 1.1.1 also verified that a read tool's completion event directly carries file text. These are results from a specific environment, not a cross-platform guarantee. See the [verification record](docs/verification.md), [development guide](docs/development.md), and [AGENTS.md](AGENTS.md).
 

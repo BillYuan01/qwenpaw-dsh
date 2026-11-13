@@ -27,9 +27,11 @@ These paths are inside `qwenpaw-dsh/`:
 
 ## Behaviors to preserve
 
+These are maintenance invariants and intended contracts, **not evidence that the current code satisfies every edge case**. Check [known implementation limitations](docs/known-limitations.md) before claiming guarantees or acceptance.
+
 ### Loading and sessions
 
-- Monkeypatch every target, including references imported by value; fail explicitly if a target is missing. Unloading must restore the exact originals and leave no partial installation. DirectLoader is not a production fallback.
+- Monkeypatch every target, including references imported by value; fail explicitly if a target is missing. Unloading should restore the exact originals and leave no partial installation; the current mount path does not roll back an exception during successive `setattr` writes (known limitation). DirectLoader is not a production fallback.
 - The default profile is `acp`. Using the bridge requires explicitly selecting `qwenpaw`; do not silently change the default.
 - Keep connection identity separate from pool keys. A new process must resume/create a session, not prompt a session ID from the old process directly.
 - Use a separate queue per session. Turns and resets for the same QwenPaw session share a serialization lock. Do not consume other sessions' frames or reuse a global completion sentinel.
@@ -42,7 +44,7 @@ These paths are inside `qwenpaw-dsh/`:
 
 - Apply an explicit model before effort, in order. Confirm the response's currentValue before prompting; fail rather than silently using a default model. Preserve provider identity in catalogs and use effort choices only from the current model.
 - Use single-flight probing for missing/expired catalogs. Model counts are not fixed, and probing may start DSH. Blank settings mean unspecified, not a model reset.
-- Missing approvals, denials, timeouts, and approval errors mean denial. Prefer the least-privileged one-time grant; do not persist access. An explicit permission_mode takes precedence over session/agent approval_level; OFF maps to full access.
+- Missing approvals, denials, timeouts, and approval errors mean denial. Prefer the least-privileged one-time grant; do not persist access. An explicit permission_mode takes precedence over session/agent approval_level; OFF maps to full access. Currently, `approval_policy=never` is recorded but not separately enforced by the approval callback; do not describe it as an unconditional refusal guarantee.
 - read-only is not a read allowlist. Do not disable approvals or sandboxing, or broaden permissions, as a default troubleshooting step.
 - Extract tool text only from standard content/text and compatible text shapes. Do not repr unknown objects or expose binary/rawOutput data. Preserve the 32768-character tool preview limit, truncation marker, and recursion guards. Do not truncate normal responses/reasoning; retain failed status.
 - Reserve stdout for ACP protocol traffic, not logs or debug prints.
