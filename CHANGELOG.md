@@ -2,6 +2,16 @@
 
 版本按语义化版本编号。本仓库发布 `qwenpaw-dsh`（QwenPaw 插件）；DSH 侧桥 `dsh-qwenpaw-bridge` 已拆到独立仓库发布。
 
+## v1.1.4 — 2026-11-13
+
+**面向 AgentScope Platform 插件广场的中文默认展示和元数据同步版本。** 本次不修复业务代码问题，不改变 ACP 协议、权限实现、模型映射和 DSH 桥（仍为 1.1.0）。
+
+- `plugin.json` 的 `name` / `description` 改为中文，说明模型选择、会话恢复、工具事件、权限审批及桥的独立安装要求；`version` 改为 1.1.4。
+- 仓库首页 `README.md` 与插件安装根目录 `qwenpaw-dsh/README.md` 默认使用中文；仓库另提供 `README.en.md`，在中文说明顶部提供英文跳转。保留 `README.zh-CN.md` 兼容旧链接。
+- ACP 客户端 `_CLIENT_VERSION` 仅同步版本号到 1.1.4；不修改连接、权限、工具、流式输出等业务逻辑。
+- 现有已知实现限制继续记录，不将未修复问题描述为已修复。原有 Release ZIP 和 tag 均保留，另建新包。
+- 发布验证需要在对应环境运行白名单离线测试和打包器 build/check；未执行前不得宣称本版本测试已通过。
+
 ## v1.1.3 — 2026-11-13
 
 **修复 QwenPaw 2.3.0 正式版上插件被版本门禁拒绝（DSH backend 从 provider 列表消失）。** 本版只放宽 host 版本门禁上界并同步回归测试与文档，不改 ACP 协议、不改工具映射、不改桥 `dsh-qwenpaw-bridge`（保持 v1.1.0）。

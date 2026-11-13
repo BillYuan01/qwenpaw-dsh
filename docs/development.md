@@ -13,7 +13,7 @@
 | `dist/` | Historical release packages; do not overwrite |
 | `patches/qwenpaw-upstream/` | Archived patches; not applied automatically |
 
-The [architecture guide](architecture.md) describes runtime behavior; [AGENTS.md](../AGENTS.md) defines contribution constraints. For installation and usage, start with the [root README](../README.md). Known code-level limits that are not fixed by documentation edits are recorded in [known-limitations.md](known-limitations.md).
+The [architecture guide](architecture.md) describes runtime behavior; [AGENTS.md](../AGENTS.md) defines contribution constraints. For installation and usage, start with the [Chinese root README](../README.md) or [English instructions](../README.en.md). The package embeds a Chinese installable-root README that links to the English version online. Known code-level limits that are not fixed by documentation edits are recorded in [known-limitations.md](known-limitations.md).
 
 ## Default checks
 

@@ -4,7 +4,7 @@ Local delivery tools using the standard library and existing runtime. They do no
 
 ## `plugin_package.py`
 
-A package builder/checker with an explicit 21-file allowlist. Packages contain `plugin.json`, `plugin.py`, `README.md`, `LICENSE`, and `qwenpaw_dsh/`, with no tests, caches, state, or symlinks.
+A package builder/checker with an explicit 21-file allowlist. Packages contain `plugin.json`, `plugin.py`, the Chinese default `README.md` (linking to the English online guide), `LICENSE`, and `qwenpaw_dsh/`, with no tests, caches, state, or symlinks. The English README is a repository document, not an extra ZIP member.
 
 Run from the repository root:
 

@@ -1,4 +1,4 @@
-[English](README.md) | 简体中文
+简体中文 | [English](README.en.md)
 
 # qwenpaw-dsh
 
@@ -6,7 +6,7 @@
 
 插件通过 ACP v1 驱动 DSH，负责会话、模型选择、工具事件和审批的衔接。这是社区项目，不是两家厂商的官方组件。
 
-当前版本：**1.1.3**。推荐搭配 [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，不要求两个组件同版号。
+当前版本：**1.1.4**。推荐搭配 [dsh-qwenpaw-bridge 1.1.0](https://github.com/BillYuan01/dsh-qwenpaw-bridge)，不要求两个组件同版号。
 
 ## 能做什么
 
@@ -48,12 +48,12 @@ dsh plugin --profile qwenpaw add /absolute/path/to/dsh-qwenpaw-bridge
 ### 2. 安装 QwenPaw 插件
 
 ```sh
-git clone --branch v1.1.3 https://github.com/BillYuan01/qwenpaw-dsh.git
+git clone https://github.com/BillYuan01/qwenpaw-dsh.git
 cd qwenpaw-dsh
 qwenpaw plugin install ./qwenpaw-dsh
 ```
 
-安装目标是仓库内层的 `qwenpaw-dsh/`，那里才有 `plugin.json`。也可以从 [Releases](https://github.com/BillYuan01/qwenpaw-dsh/releases) 下载 ZIP，解压后安装该目录。更新现有插件可使用宿主支持的 `--force` 流程；热加载会关闭旧插件持有的连接，应避开正在运行的回合。
+安装目标是仓库内层的 `qwenpaw-dsh/`，那里才有 `plugin.json`。以上命令克隆当前主分支；需要固定版本时，可在 v1.1.4 Release 发布后检出 `v1.1.4` 标签。也可以从 [Releases](https://github.com/BillYuan01/qwenpaw-dsh/releases) 下载 ZIP，解压后安装该目录。更新现有插件可使用宿主支持的 `--force` 流程；热加载会关闭旧插件持有的连接，应避开正在运行的回合。
 
 ### 3. 创建智能体
 

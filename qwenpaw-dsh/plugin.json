@@ -1,9 +1,9 @@
 {
   "id": "qwenpaw-dsh",
-  "name": "DeepSeek Harness (DSH) backend",
-  "version": "1.1.3",
+  "name": "DeepSeek Harness（DSH）智能体后端",
+  "version": "1.1.4",
   "type": "hook",
-  "description": "Register DeepSeek Harness as a third-party agent backend (loader/core seam; drives `dsh --profile acp` over ACP v1).",
+  "description": "为 QwenPaw 集成 DeepSeek Harness（DSH）智能体后端，支持模型选择、会话恢复、工具调用和权限审批。实时流式输出与扩展功能需另行安装 dsh-qwenpaw-bridge，并使用 qwenpaw profile。",
   "author": "BillYuan01",
   "entry": {
     "backend": "plugin.py"
