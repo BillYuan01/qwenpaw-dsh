@@ -20,7 +20,7 @@ From another directory, use the actual path to this directory. Installation exec
 
 ## Before use
 
-- The current manifest and monkeypatch loader support QwenPaw `>=2.2.0, <2.3.0`. Reserved code for a future official loader does not mean 2.3+ is supported.
+- The current manifest and monkeypatch loader support QwenPaw `>=2.2.0, <2.4.0` (2.2.x and 2.3.x; all patch targets verified on 2.3.0 final). Reserved code for a future official loader does not mean the official harness-plugin mechanism exists yet.
 - The service environment must have a compatible DSH CLI, ACP SDK, model routing, and credentials. Installing QwenPaw does not configure DSH models.
 - The default DSH profile is `acp`. For the bridge's real-time deltas, model catalog, and permission presets, install the separate [`dsh-qwenpaw-bridge`](https://github.com/BillYuan01/dsh-qwenpaw-bridge) into DSH, then explicitly set `backend_settings.profile` to `qwenpaw`.
 - Linux has integration-test coverage. This project has not completed end-to-end validation on macOS or native Windows. Unverified does not mean either supported or unable to run.

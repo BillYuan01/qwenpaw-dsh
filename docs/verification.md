@@ -2,6 +2,18 @@
 
 The checks below have been completed; they are not a compatibility guarantee for every environment. Public records describe synthetic test scope and results without machine identifiers, private paths, session logs, or credentials.
 
+## 2026-11-13: 1.1.3 host-gate widening on QwenPaw 2.3.0 final
+
+Environment: Linux, QwenPaw 2.3.0, DSH 0.2.1-rc.5, plugin 1.1.3, bridge 1.1.0.
+
+- Precondition check before widening the gate: on QwenPaw 2.3.0 all four monkeypatch target modules and every patched attribute (`PROVIDER_CATALOG`, `create_adapter`, `adapter_config_key`, `get_provider`) resolve; the registry is still a static catalog with by-value import bindings. The official harness-plugin registration entry is still absent (all four candidates probed).
+- All **278 offline tests passed** in 14 allowlisted files, 0 skipped. The version-gate regression file now admits `2.3.0`/`2.3.1` and 2.4.0 pre-releases, and still rejects `2.4.0`/`2.4.1`/`2.5.0`, older hosts, and empty/unparseable versions.
+- The whitelisted 1.1.3 ZIP was built and checked with the reproducible packager (21 members), then hot-installed into the running host without a restart.
+- Mount report: `host_version=2.3.0`, all four modules mounted, `missing=[]`, `ok=true`. `dsh` returned to `/api/harnesses` (available/installed true).
+- `/api/harnesses/dsh/models` returned HTTP 200 with **7 models** (the bridge catalog now also lists a deepseek-account route; catalog content comes from the bridge, not this plugin).
+- A live `chat_with_agent` round trip to the dsh agent returned PONG.
+- Not retested in this version: approval cards, Skills/MCP/image projection, streaming chunk counts, macOS/native Windows. Those paths are unchanged by this gate-only fix; historical evidence remains below.
+
 ## 2026-10-25: 1.1.1 tool-result mapping
 
 Environment: Linux, QwenPaw 2.2.2.post1, DSH 0.2.1-rc.2, plugin 1.1.1, bridge 1.1.0.

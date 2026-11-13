@@ -23,7 +23,7 @@ The components install separately: this plugin goes into QwenPaw; the bridge goe
 
 ## Requirements
 
-- QwenPaw `>=2.2.0, <2.3.0`, with the official ACP SDK (`acp`) in its Python environment.
+- QwenPaw `>=2.2.0, <2.4.0` (2.2.x and 2.3.x), with the official ACP SDK (`acp`) in its Python environment.
 - DSH `>=0.2.0-rc.2 <0.3.0-0`, with model routing and credentials already configured.
 - Node.js >=22; the DSH bridge also requires pnpm.
 

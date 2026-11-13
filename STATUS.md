@@ -1,15 +1,17 @@
 # Project status
 
 > Current overview. See [AGENTS.md](AGENTS.md) for maintenance rules, [architecture](docs/architecture.md) for implementation limits, and [CHANGELOG.md](CHANGELOG.md) for release history.
-> Updated **2026-10-28** for the v1.1.2 host-version gate fix.
+> Updated **2026-11-13** for the v1.1.3 host-gate widening (QwenPaw 2.3.0 final).
 
 ## Current release
 
-**v1.1.2** fixes the host-version gate that made the plugin unmountable on QwenPaw **2.3.0b1**. `MonkeypatchLoader._in_range` scraped digits out of each dot-segment, so `"2.3.0b1"` became `(2, 3, 1)` and sorted *above* the exclusive bound `2.3.0`. With `monkeypatch-2.2` rejecting the version and `official-plugin` finding no registration entry on 2.3.0b1, both mount strategies failed, the plugin was marked FAILED, and the DSH backend dropped out of `PROVIDER_CATALOG`. The gate now compares with `packaging.version.Version` (PEP 440: a pre-release sorts before its base release) and the digit-scraping path survives only as a dependency-free fallback that fails closed on unparseable input. The runtime change is confined to `core/loaders/monkeypatch.py`, alongside version constants, a new test file, and documentation. The `version_range` bounds themselves are unchanged: `2.3.0` is still exclusive.
+**v1.1.3** admits QwenPaw **2.3.0 final**. The official harness-plugin mechanism promised in issue #7396 did not land in 2.3.0 (re-verified 2026-11-13: the registry is still a static `PROVIDER_CATALOG`, `PluginType` has no agent-backend member, and none of the official loader's candidate entries exists), while the v1.1.2 gate `[2.2.0, 2.3.0)` excluded `2.3.0` itself — so both mount strategies failed and the DSH backend dropped out of the catalog after a host restart. Before widening anything, all four monkeypatch target modules and every patched attribute were re-verified present and unchanged on 2.3.0. The supported range is now `[2.2.0, 2.4.0)` in both `MonkeypatchLoader.version_range` and the manifest's `qwenpaw_version.max`; `2.4.0` stays excluded until its internals are re-verified the same way. The change is confined to the loader layer, version constants, the version-gate regression tests, and documentation; the ACP protocol, tool mapping, and bridge are untouched.
+
+**v1.1.2** fixed the host-version gate that made the plugin unmountable on QwenPaw **2.3.0b1**. `MonkeypatchLoader._in_range` scraped digits out of each dot-segment, so `"2.3.0b1"` became `(2, 3, 1)` and sorted *above* the exclusive bound `2.3.0`. The gate now compares with `packaging.version.Version` (PEP 440: a pre-release sorts before its base release) and the digit-scraping path survives only as a dependency-free fallback that fails closed on unparseable input.
 
 **v1.1.1** fixed ACP tool-result text mapping. The nested `TextContentBlock` inside `ToolCallProgress.content` / `ContentToolCallContent(type="content")` was previously dropped, leaving host tool output empty. Tool results have a 32768-character limit with a truncation marker; agent text and reasoning are not truncated. image/audio/resource/diff/terminal content is still not projected.
 
-All **252 offline tests passed** in 14 allowlisted files. On this machine (Linux, QwenPaw 2.3.0b1) the loaders were exercised directly: `probe()` reports `ok: true` with all four patch targets mounted, `PROVIDER_CATALOG` gains `dsh`, `get_provider("dsh")` returns `DeepSeek Harness`, `create_adapter` returns a `DshAdapter`, and `unmount()` restores the catalog exactly. **Not verified in this version:** a real DSH ACP conversation, credentials, billable models, macOS/native Windows. See the [verification record](docs/verification.md). The bridge remains `dsh-qwenpaw-bridge` **v1.1.0**, compatible with plugin 1.1.2.
+All **278 offline tests passed** in 14 allowlisted files (the "252" figure in v1.1.2 docs omitted the 26 `test_delivery_tools.py` tests, which carry no fixed count assertion). On this machine (Linux, QwenPaw **2.3.0**, DSH 0.2.1-rc.5, bridge 1.1.0) the whitelisted 1.1.3 ZIP was hot-installed without a restart: the mount report shows `host_version=2.3.0` with all four patch targets mounted and `missing=[]`, `dsh` returned to `/api/harnesses` (available/installed true), `/api/harnesses/dsh/models` returned HTTP 200 with 7 models, and a live `chat_with_agent` round trip returned PONG. **Not retested in this version:** approval cards, Skills/MCP/image projection, streaming chunk counts, macOS/native Windows — those paths are unchanged by this gate-only fix. See the [verification record](docs/verification.md). The bridge remains `dsh-qwenpaw-bridge` **v1.1.0**, compatible with plugin 1.1.3.
 
 **v1.1.0 release-stage context (2026-10-25):** This was the first consolidated release of the G1–G5 safety/lifecycle fixes made after 2026-10-21, paired with bridge v1.1.0. Release-stage verification was offline/static: 252 unit tests in 12 allowlisted files, reproducible packaging, and member-by-member ZIP comparison against final source. That stage did not rerun real DSH, credentials, or billable models, or validate macOS/native Windows. Later Linux live checks for 1.1.0 and 1.1.1 are recorded separately in [verification.md](docs/verification.md). The capability figures below remain historical evidence from 2026-10-21. The 1.1.0 ZIP was built from its final release source; historical `1.0.0` / `1.0.1` ZIPs are unchanged.
 
@@ -21,11 +23,11 @@ A **DeepSeek Harness (`dsh`)** integration that makes DSH a **first-class QwenPa
 
 | Component | Version | Notes |
 |---|---|---|
-| Repository release | **v1.1.2** | Host-version gate fix for QwenPaw 2.3.0b1 (2026-10-28) |
-| `qwenpaw-dsh` (QwenPaw plugin) | **1.1.2** | `qwenpaw-dsh/plugin.json`; bridge remains 1.1.0 |
+| Repository release | **v1.1.3** | Host-gate widening for QwenPaw 2.3.0 final (2026-11-13) |
+| `qwenpaw-dsh` (QwenPaw plugin) | **1.1.3** | `qwenpaw-dsh/plugin.json`; bridge remains 1.1.0 |
 | `dsh-qwenpaw-bridge` (DSH bridge) | **1.1.0** | Unchanged by this patch; [separate repository](https://github.com/BillYuan01/dsh-qwenpaw-bridge) |
 
-**Requirements:** QwenPaw `2.2.x` (guard range `[2.2.0, 2.3.0)`), DSH `>=0.2.0-rc.2 <0.3.0-0`, the QwenPaw Python environment, and a working model route. Historical end-to-end tests used DSH `0.2.0-rc.2`; the 2026-10-25 live checks used `0.2.1-rc.2`.
+**Requirements:** QwenPaw `2.2.x`–`2.3.x` (guard range `[2.2.0, 2.4.0)`), DSH `>=0.2.0-rc.2 <0.3.0-0`, the QwenPaw Python environment, and a working model route. Historical end-to-end tests used DSH `0.2.0-rc.2`; the 2026-10-25 live checks used `0.2.1-rc.2`; the 2026-11-13 live checks used `0.2.1-rc.5`.
 
 ## Capabilities: historical live evidence from 2026-10-21
 

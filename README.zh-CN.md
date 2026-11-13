@@ -23,7 +23,7 @@ QwenPaw → qwenpaw-dsh（本插件）→ ACP → DSH + dsh-qwenpaw-bridge → �
 
 ## 环境要求
 
-- QwenPaw `>=2.2.0, <2.3.0`，以及其 Python 环境中的官方 ACP SDK（`acp`）。
+- QwenPaw `>=2.2.0, <2.4.0`（2.2.x 与 2.3.x），以及其 Python 环境中的官方 ACP SDK（`acp`）。
 - DSH `>=0.2.0-rc.2 <0.3.0-0`，已经配置好模型和凭据。
 - Node.js >=22；安装 DSH 桥还需要 pnpm。
 

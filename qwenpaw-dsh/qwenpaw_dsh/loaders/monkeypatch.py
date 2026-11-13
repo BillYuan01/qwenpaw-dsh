@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
-"""QwenPaw 2.2.x loader — patch the registry and every by-value import binding.
+"""QwenPaw 2.2.x-2.3.x loader — patch the registry and every by-value import binding.
 
 Why so many targets: ``harnesses/runtime.py`` and the routers do
 ``from .registry import PROVIDER_CATALOG, create_adapter, ...``, which binds the
 symbol *by value* at import time. Patching only ``registry`` would leave the
 runtime and the API routers looking at the originals.
+
+QwenPaw 2.3.0 final (verified 2026-11-13) still ships the static
+``PROVIDER_CATALOG`` registry and the same by-value import bindings; all four
+patch targets and every attribute resolve unchanged, so the monkeypatch
+strategy covers 2.3.x as well. The official harness-plugin mechanism promised
+in issue #7396 did not land in 2.3.0 — ``OfficialLoader`` keeps feature-detecting
+it and this loader remains the fallback until it does.
 
 Contract: every target must exist and every attribute must be found, otherwise
 ``mount`` raises — no silent half-mount. ``unmount`` restores originals exactly.
@@ -35,9 +42,11 @@ DEFAULT_TARGETS: dict[str, tuple[str, ...]] = {
 
 
 class MonkeypatchLoader:
+    # Stable strategy identifier (logs/reports); the monkeypatch approach was
+    # introduced for 2.2 and verified to cover 2.3.x as well (see module doc).
     strategy = "monkeypatch-2.2"
 
-    def __init__(self, *, version_range: tuple[str, str] = ("2.2.0", "2.3.0"),
+    def __init__(self, *, version_range: tuple[str, str] = ("2.2.0", "2.4.0"),
                  targets: dict[str, tuple[str, ...]] | None = None) -> None:
         self.version_range = version_range
         self.targets = targets or DEFAULT_TARGETS

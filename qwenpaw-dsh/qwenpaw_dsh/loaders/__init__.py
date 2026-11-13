@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Loader selection: official (2.3+) → monkeypatch (2.2.x) → direct (tests)."""
+"""Loader selection: official (future) → monkeypatch (2.2.x-2.3.x) → direct (tests)."""
 
 from __future__ import annotations
 

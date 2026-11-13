@@ -5,8 +5,8 @@ This repository maintains the QwenPaw-side Python plugin. See [README.md](README
 ## Before making changes
 
 - Read the relevant source, tests, and current diff. Preserve existing work; do not use reset/clean to clear the working tree.
-- The installable directory is the inner `qwenpaw-dsh/`. The current plugin is 1.1.2 and its companion bridge is 1.1.0. Manifests are authoritative; do not infer compatibility from matching repository versions.
-- Supported hosts are `>=2.2.0, <2.3.0` (PEP 440), so pre-releases of 2.3.0 such as `2.3.0b1` are admitted while `2.3.0` itself is not. The future official loader is not a promise of 2.3+ support; do not remove guards to make tests pass.
+- The installable directory is the inner `qwenpaw-dsh/`. The current plugin is 1.1.3 and its companion bridge is 1.1.0. Manifests are authoritative; do not infer compatibility from matching repository versions.
+- Supported hosts are `>=2.2.0, <2.4.0` (PEP 440): 2.2.x and 2.3.x, including `2.3.0` final — all four monkeypatch targets and every patched attribute were re-verified on 2.3.0 (2026-11-13) before the bound was widened. `2.4.0` stays excluded until its internals are re-verified the same way. The future official loader is not a promise that the official harness-plugin mechanism exists; do not remove guards to make tests pass.
 - Stay within the request. Documentation work does not authorize code fixes, deployment, model calls, or releases.
 
 ## Code entry points
@@ -64,7 +64,7 @@ python tools/run_safe_tests.py --list
 git diff --check
 ```
 
-The runner currently selects 13 files / 272 tests, without model calls. See the change-to-test table in [development.md](docs/development.md). Report missing dependencies, failures, and skips separately. Do not install dependencies automatically or weaken assertions to get a passing result.
+The runner currently selects 14 files / 278 tests, without model calls. See the change-to-test table in [development.md](docs/development.md). Report missing dependencies, failures, and skips separately. Do not install dependencies automatically or weaken assertions to get a passing result.
 
 **Do not collect all tests indiscriminately.** `smoke_adapter.py`, `stream_check.py`, `test_*_projection.py`, and contract/spike/seed helpers may start DSH, link real credentials, or incur charges. Inspect their behavior before running them and obtain authorization for the target, permissions, and costs. A temporary DSH_HOME does not automatically isolate credentials.
 

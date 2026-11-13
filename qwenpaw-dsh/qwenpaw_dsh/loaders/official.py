@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """QwenPaw 2.3+ loader — forward-declared, feature-detected, fail-loud.
 
-Status as of the 2.3 intel review: the
-third-party-agent-plugin mechanism is **promised but not in flight**. The only
-public 2.3.0 scope (issue #8289) is the plugin lifecycle refactor (#7565) and
-channels→plugins (#8187); no harness/agent plugin type exists in
-``plugins/architecture.py`` and ``harnesses/registry.py`` is still static.
+Status (re-verified 2026-11-13 against QwenPaw **2.3.0 final**): the
+third-party-agent-plugin mechanism promised in issue #7396 **did not land**.
+2.3.0 shipped the plugin lifecycle refactor, but ``harnesses/registry.py`` is
+still a static ``PROVIDER_CATALOG`` tuple, ``PluginType`` has no agent-backend
+member, and none of the candidate registration entries below exists. The
+monkeypatch loader therefore covers 2.3.x (all patch targets verified present).
 
-So this loader does not guess an API. It probes a *candidate* set, and when none
+This loader does not guess an API. It probes a *candidate* set, and when none
 is present it raises :class:`MountUnsupported` with a precise diagnosis. When
-2.3 lands, only this file changes.
+the official mechanism lands, only this file changes.
 """
 
 from __future__ import annotations
@@ -57,10 +58,11 @@ class OfficialLoader:
             strategy=self.strategy,
             missing=[f"{m}.{a}" for m, a in CANDIDATE_TARGETS],
             detail=(
-                "no official harness-plugin registration entry found. As of the 2.3 intel "
-                "review this mechanism is promised in issue #7396 but not implemented; "
-                "wire it here once it lands. Do NOT fall back to PluginApi.register_provider "
-                "(that is an LLM provider, not an agent backend)."
+                "no official harness-plugin registration entry found. Re-verified on "
+                "QwenPaw 2.3.0 final (2026-11-13): the mechanism promised in issue "
+                "#7396 is still not implemented; wire it here once it lands. Do NOT "
+                "fall back to PluginApi.register_provider (that is an LLM provider, "
+                "not an agent backend)."
             ),
         )
 

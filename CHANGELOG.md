@@ -2,6 +2,35 @@
 
 版本按语义化版本编号。本仓库发布 `qwenpaw-dsh`（QwenPaw 插件）；DSH 侧桥 `dsh-qwenpaw-bridge` 已拆到独立仓库发布。
 
+## v1.1.3 — 2026-11-13
+
+**修复 QwenPaw 2.3.0 正式版上插件被版本门禁拒绝（DSH backend 从 provider 列表消失）。** 本版只放宽 host 版本门禁上界并同步回归测试与文档，不改 ACP 协议、不改工具映射、不改桥 `dsh-qwenpaw-bridge`（保持 v1.1.0）。
+
+### 背景
+
+- QwenPaw **2.3.0 正式版没有落地** #7396 承诺的官方 harness 插件注册入口：`harnesses/registry.py` 仍是静态 `PROVIDER_CATALOG`，`PluginType` 无 agent 后端类型，`OfficialLoader` 探测的候选入口均不存在（2026-11-13 在 2.3.0 上复核）。
+- v1.1.2 的门禁区间为 `[2.2.0, 2.3.0)`，`2.3.0` 正式版恰被排他上界拒绝；两条装载策略同时失守，插件被标记 FAILED，DSH backend 消失。这正是 v1.1.2 已知边界预留的场景："2.3.0 正式版发布后需重新判定其内部结构是否仍与四个 patch 目标一致"。
+
+### 修复
+
+- **放宽前置复核（先验证、后放宽）**：在 QwenPaw 2.3.0 上实测四个 patch 目标模块 `qwenpaw.harnesses.registry` / `qwenpaw.harnesses.runtime` / `qwenpaw.app.routers.harnesses` / `qwenpaw.app.routers.agents` 的全部符号（`PROVIDER_CATALOG` / `create_adapter` / `adapter_config_key` / `get_provider`）均存在，registry 结构与 by-value import 方式未变 → monkeypatch 策略对 2.3.x 仍然适用。
+- `MonkeypatchLoader.version_range` 默认 `("2.2.0", "2.3.0")` → `("2.2.0", "2.4.0")`；`plugin.json` 的 `qwenpaw_version.max` 同步 `2.3.0` → `2.4.0`（排他上界语义不变）。`2.4.0` 及以上仍拒绝，须先复核内部结构再放宽。
+- 策略标识 `monkeypatch-2.2` 保持不变（日志/报告用的稳定标识）；模块文档注明覆盖 2.2.x–2.3.x。
+- `OfficialLoader` 探测候选与 fail-loud 行为不变，仅状态说明更新为"已在 2.3.0 正式版复核：仍未实现"。
+- `_CLIENT_VERSION` → `1.1.3`。
+
+### 验证（离线 + 本机）
+
+- `tests/test_version_gate.py` 更新为新区间（仍 **6** 项）：`2.4.0` 预发布（a1/b1/b2/rc1）放行；`2.4.0`/`2.4.1`/`2.5.0` 仍拒绝；`2.3.0b1`/`2.3.0`/`2.3.1` 放行（本版回归用例）；旧版本/空版本/不可解析版本的行为不变。
+- `tools/run_safe_tests.py` 白名单 **14** 文件共 **278** 项离线测试全过，0 skip。计数口径说明：v1.1.2 文档所写总数 252 漏计了无固定计数断言的 `test_delivery_tools.py` 26 项（226+26+20+6=278，v1.1.1 的 272 + 本版门禁文件 6 项亦为 278）；本版按实际数记录，历史条目不改写。
+- 本机（Linux，QwenPaw **2.3.0**，DSH **0.2.1-rc.5**，桥 **1.1.0**）：白名单 ZIP 经打包器 build+check（21 成员）后热装载成功（无需重启）；挂载报告 `host_version=2.3.0`、四模块全挂载、`missing=[]`、`ok=true`；`dsh` 回到 `/api/harnesses`（available/installed=true）；`/api/harnesses/dsh/models` HTTP 200、**7 个模型**（桥目录新增 deepseek-account 路由，目录内容来自桥而非本插件）；`chat_with_agent(dsh)` → **PONG**。
+- **未验证**：macOS / 原生 Windows；审批卡片 / Skills / MCP / 图片 / 流式 chunk 数等能力回归（本版未改这些路径，沿用历史证据）；2.4.x 内部结构。
+
+### 已知边界
+
+- 2.3.0 仍无官方 harness 插件注册入口；本版依赖 monkeypatch 2.2.x–2.3.x 内部符号。若未来版本改动这些符号的语义（而非签名），`mount()` 仍会因目标缺失拒绝挂载，不会静默半挂载。
+- 上界 `2.4.0` 为排他；2.4.0 发布后按同一流程重新判定（先实测全部 patch 目标，再放宽门禁与 manifest）。
+
 ## v1.1.2 — 2026-10-28
 
 **修复 QwenPaw 2.3.0b1 上插件被误判失败（DSH backend 从 provider 列表消失）。** 本版只改 host 版本门禁与其回归测试，不改 ACP 协议、不改工具映射、不改桥 `dsh-qwenpaw-bridge`（保持 v1.1.0）。附带同一处门禁的 fail-closed 收紧。
